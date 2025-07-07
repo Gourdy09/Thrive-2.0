@@ -2,7 +2,7 @@ import { Colors } from "@/constants/colors";
 
 import { View, useColorScheme } from "react-native";
 export default function Medication() {
-  const colorScheme = useColorScheme() ?? "light";
+  const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
   return (
     <View

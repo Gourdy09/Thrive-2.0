@@ -26,14 +26,15 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           tabBarShowLabel: false,
+          lazy: false,
           tabBarActiveTintColor: theme.tabIconSelected,
           tabBarInactiveTintColor: theme.tabIconDefault,
           tabBarStyle: {
             backgroundColor: theme.background,
             borderTopColor: theme.icon,
+            borderTopWidth: 1,
           },
           headerShown: false,
-          // Add smooth transitions between tabs
           animation: "shift",
         }}
         initialRouteName="dashboard"

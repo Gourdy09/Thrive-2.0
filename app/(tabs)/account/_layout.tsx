@@ -16,11 +16,10 @@ export default function AccountLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: "ios_from_right",
+          animation: "slide_from_right",
           contentStyle: {
             backgroundColor: theme.background,
           },
-          presentation: "transparentModal",
         }}
       />
     </View>

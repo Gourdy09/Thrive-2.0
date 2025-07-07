@@ -7,19 +7,23 @@ export default function RootLayout() {
   const theme = Colors[colorScheme];
 
   return (
-    <View style={{
-      flex: 1,
-      backgroundColor: theme.background,
-    }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme.background,
+      }}
+    >
       <Stack
         screenOptions={{
           headerShown: false,
           contentStyle: {
             backgroundColor: theme.background,
           },
-          presentation: "transparentModal"
+          animation: "ios_from_right",
         }}
-      />
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
     </View>
   );
 }
