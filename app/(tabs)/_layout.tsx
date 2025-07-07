@@ -1,43 +1,65 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
-
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from "@/constants/colors";
+import { Tabs } from "expo-router";
+import {
+  CircleUser,
+  Hamburger,
+  LayoutDashboard,
+  Pill,
+  SquareActivity,
+} from "lucide-react-native";
+import React from "react";
+import { useColorScheme } from "react-native";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const colorScheme = useColorScheme() ?? "dark";
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarShowLabel: false,
+        tabBarActiveTintColor: Colors[colorScheme].tabIconSelected,
+        tabBarInactiveTintColor: Colors[colorScheme].tabIconDefault,
+        tabBarStyle: {
+          backgroundColor: Colors[colorScheme].background,
+          borderTopColor: Colors[colorScheme].icon,
+        },
         headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
-      }}>
+      }}
+      initialRouteName="dashboard"
+    >
       <Tabs.Screen
-        name="index"
+        name="food"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: "Food",
+          tabBarIcon: ({ color }) => <Hamburger color={color} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="activity"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "Activity",
+          tabBarIcon: ({ color }) => <SquareActivity color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: "Dashboard",
+          tabBarIcon: ({ color }) => <LayoutDashboard color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="medication"
+        options={{
+          title: "Medication",
+          tabBarIcon: ({ color }) => <Pill color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{
+          title: "Account",
+          tabBarIcon: ({ color }) => <CircleUser color={color} />,
         }}
       />
     </Tabs>
