@@ -5,7 +5,7 @@ import { Colors } from "@/constants/colors";
 import { View, useColorScheme } from "react-native";
 
 export default function Dashboard() {
-  const colorScheme = useColorScheme() ?? "light";
+  const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
   const username = "{UserName}";

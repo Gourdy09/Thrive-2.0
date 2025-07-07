@@ -1,5 +1,7 @@
 import { Colors } from "@/constants/colors";
 import { Tabs } from "expo-router";
+import { View } from "react-native";
+
 import {
   CircleUser,
   Hamburger,
@@ -12,56 +14,67 @@ import { useColorScheme } from "react-native";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() ?? "dark";
+  const theme = Colors[colorScheme];
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarShowLabel: false,
-        tabBarActiveTintColor: Colors[colorScheme].tabIconSelected,
-        tabBarInactiveTintColor: Colors[colorScheme].tabIconDefault,
-        tabBarStyle: {
-          backgroundColor: Colors[colorScheme].background,
-          borderTopColor: Colors[colorScheme].icon,
-        },
-        headerShown: false,
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme.background,
       }}
-      initialRouteName="dashboard"
     >
-      <Tabs.Screen
-        name="food"
-        options={{
-          title: "Food",
-          tabBarIcon: ({ color }) => <Hamburger color={color} />,
+      <Tabs
+        screenOptions={{
+          tabBarShowLabel: false,
+          tabBarActiveTintColor: theme.tabIconSelected,
+          tabBarInactiveTintColor: theme.tabIconDefault,
+          tabBarStyle: {
+            backgroundColor: theme.background,
+            borderTopColor: theme.icon,
+          },
+          headerShown: false,
+          // Add smooth transitions between tabs
+          animation: "shift",
         }}
-      />
-      <Tabs.Screen
-        name="activity"
-        options={{
-          title: "Activity",
-          tabBarIcon: ({ color }) => <SquareActivity color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          title: "Dashboard",
-          tabBarIcon: ({ color }) => <LayoutDashboard color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="medication"
-        options={{
-          title: "Medication",
-          tabBarIcon: ({ color }) => <Pill color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="account"
-        options={{
-          title: "Account",
-          tabBarIcon: ({ color }) => <CircleUser color={color} />,
-        }}
-      />
-    </Tabs>
+        initialRouteName="dashboard"
+        backBehavior="history"
+      >
+        <Tabs.Screen
+          name="food"
+          options={{
+            title: "Food",
+            tabBarIcon: ({ color }) => <Hamburger color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="activity"
+          options={{
+            title: "Activity",
+            tabBarIcon: ({ color }) => <SquareActivity color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="dashboard"
+          options={{
+            title: "Dashboard",
+            tabBarIcon: ({ color }) => <LayoutDashboard color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="medication"
+          options={{
+            title: "Medication",
+            tabBarIcon: ({ color }) => <Pill color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="account"
+          options={{
+            title: "Account",
+            tabBarIcon: ({ color }) => <CircleUser color={color} />,
+          }}
+        />
+      </Tabs>
+    </View>
   );
 }

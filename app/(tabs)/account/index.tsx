@@ -4,24 +4,24 @@
 import { Colors } from "@/constants/colors";
 import { useRouter } from "expo-router";
 import {
-    Bell,
-    ChevronRight,
-    CreditCard,
-    HelpCircle,
-    LogOut,
-    MessageSquare,
-    Settings,
+  Bell,
+  ChevronRight,
+  CreditCard,
+  HelpCircle,
+  LogOut,
+  MessageSquare,
+  Settings,
 } from "lucide-react-native";
 import {
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from "react-native";
 
 export default function AccountMain() {
-  const colorScheme = useColorScheme() ?? "light";
+  const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
   const router = useRouter();
 
