@@ -22,7 +22,7 @@ export default function Layout() {
       }}
     >
       <Tabs
-        initialRouteName="dashboard/index"
+        initialRouteName="dashboard"
         screenOptions={{
           tabBarShowLabel: false,
           lazy: false,
@@ -38,28 +38,28 @@ export default function Layout() {
         }}
       >
         <Tabs.Screen
-          name="dashboard/index"
-          options={{
-            title: "Dashboard",
-            tabBarIcon: ({ color }) => <LayoutDashboard color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="activity/index"
+          name="activity"
           options={{
             title: "Activity",
             tabBarIcon: ({ color }) => <SquareActivity color={color} />,
           }}
         />
         <Tabs.Screen
-          name="food/index"
+          name="food"
           options={{
             title: "Food",
             tabBarIcon: ({ color }) => <Hamburger color={color} />,
           }}
         />
         <Tabs.Screen
-          name="medication/index"
+          name="dashboard"
+          options={{
+            title: "Dashboard",
+            tabBarIcon: ({ color }) => <LayoutDashboard color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="medication"
           options={{
             title: "Medication",
             tabBarIcon: ({ color }) => <Pill color={color} />,

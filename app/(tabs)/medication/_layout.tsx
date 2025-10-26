@@ -2,7 +2,7 @@ import { Colors } from "@/constants/Colors";
 import { Stack } from "expo-router";
 import { useColorScheme, View } from "react-native";
 
-export default function RootLayout() {
+export default function SubfolderLayout() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
@@ -19,12 +19,8 @@ export default function RootLayout() {
           contentStyle: {
             backgroundColor: theme.background,
           },
-          animation: "ios_from_right",
         }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-      </Stack>
+      />
     </View>
   );
 }
