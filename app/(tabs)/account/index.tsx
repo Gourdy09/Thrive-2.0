@@ -1,7 +1,7 @@
 // app/(tabs)/account/index.tsx
 "use client";
 
-import { Colors } from "@/constants/colors";
+import { Colors } from "@/constants/Colors";
 import { useRouter } from "expo-router";
 import {
   Bell,

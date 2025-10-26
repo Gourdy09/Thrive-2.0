@@ -1,4 +1,4 @@
-import { Colors } from "@/constants/colors";
+import { Colors } from "@/constants/Colors";
 
 import { View, useColorScheme } from "react-native";
 export default function Activity() {

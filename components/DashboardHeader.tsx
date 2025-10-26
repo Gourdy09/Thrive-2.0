@@ -1,6 +1,6 @@
-import { Colors } from "@/constants/colors";
+import { Colors } from "@/constants/Colors";
 import {
-    LayoutDashboard
+  LayoutDashboard
 } from "lucide-react-native";
 import React from 'react';
 import { Text, View, useColorScheme } from "react-native";

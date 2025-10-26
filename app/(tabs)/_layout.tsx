@@ -1,7 +1,5 @@
-import { Colors } from "@/constants/colors";
+import { Colors } from "@/constants/Colors";
 import { Tabs } from "expo-router";
-import { View } from "react-native";
-
 import {
   CircleUser,
   Hamburger,
@@ -10,9 +8,9 @@ import {
   SquareActivity,
 } from "lucide-react-native";
 import React from "react";
-import { useColorScheme } from "react-native";
+import { View, useColorScheme } from "react-native";
 
-export default function TabLayout() {
+export default function Layout() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
@@ -24,6 +22,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs
+        initialRouteName="dashboard/index"
         screenOptions={{
           tabBarShowLabel: false,
           lazy: false,
@@ -37,32 +36,30 @@ export default function TabLayout() {
           headerShown: false,
           animation: "shift",
         }}
-        initialRouteName="dashboard"
-        backBehavior="history"
       >
         <Tabs.Screen
-          name="food"
-          options={{
-            title: "Food",
-            tabBarIcon: ({ color }) => <Hamburger color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="activity"
-          options={{
-            title: "Activity",
-            tabBarIcon: ({ color }) => <SquareActivity color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="dashboard"
+          name="dashboard/index"
           options={{
             title: "Dashboard",
             tabBarIcon: ({ color }) => <LayoutDashboard color={color} />,
           }}
         />
         <Tabs.Screen
-          name="medication"
+          name="activity/index"
+          options={{
+            title: "Activity",
+            tabBarIcon: ({ color }) => <SquareActivity color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="food/index"
+          options={{
+            title: "Food",
+            tabBarIcon: ({ color }) => <Hamburger color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="medication/index"
           options={{
             title: "Medication",
             tabBarIcon: ({ color }) => <Pill color={color} />,

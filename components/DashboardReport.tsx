@@ -1,8 +1,8 @@
-import { Colors } from "@/constants/colors";
+import { Colors } from "@/constants/Colors";
 import {
-    ChevronDown,
-    ChevronUp,
-    Droplet,
+  ChevronDown,
+  ChevronUp,
+  Droplet,
 } from "lucide-react-native";
 import React from "react";
 import { Text, View, useColorScheme } from "react-native";

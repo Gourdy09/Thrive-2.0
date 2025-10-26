@@ -1,6 +1,6 @@
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardReport from "@/components/DashboardReport";
-import { Colors } from "@/constants/colors";
+import { Colors } from "@/constants/Colors";
 
 import { View, useColorScheme } from "react-native";
 

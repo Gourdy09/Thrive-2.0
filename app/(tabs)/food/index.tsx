@@ -1,7 +1,7 @@
-import { Colors } from "@/constants/colors";
+import { Colors } from "@/constants/Colors";
 
 import { View, useColorScheme } from "react-native";
-export default function Medication() {
+export default function Food() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
   return (

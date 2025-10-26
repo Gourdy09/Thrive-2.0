@@ -1,4 +1,4 @@
-import { Colors } from "@/constants/colors";
+import { Colors } from "@/constants/Colors";
 import { ChevronDown } from "lucide-react-native";
 import { Pressable, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 export default function DropdownRow({
