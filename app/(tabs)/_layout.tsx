@@ -5,7 +5,6 @@ import {
   Hamburger,
   LayoutDashboard,
   Pill,
-  SquareActivity,
 } from "lucide-react-native";
 import React from "react";
 import { View, useColorScheme } from "react-native";
@@ -37,13 +36,6 @@ export default function Layout() {
           animation: "shift",
         }}
       >
-        <Tabs.Screen
-          name="activity"
-          options={{
-            title: "Activity",
-            tabBarIcon: ({ color }) => <SquareActivity color={color} />,
-          }}
-        />
         <Tabs.Screen
           name="food"
           options={{
