@@ -1,15 +1,15 @@
 import { Colors } from "@/constants/Colors";
-import {
-  LayoutDashboard
-} from "lucide-react-native";
+import { icons } from 'lucide-react-native';
 import React from 'react';
 import { Text, View, useColorScheme } from "react-native";
+import HeaderIcon from "./HeaderIcon";
 
-interface DashboardReportProps {
+interface HeaderProps {
     username: string
+    icon: keyof typeof icons;
 }
 
-export default function DashboardHeader ({username}: DashboardReportProps) {
+export default function Header ({username, icon}: HeaderProps) {
     const colorScheme = useColorScheme() ?? "light";
     const theme = Colors[colorScheme];
     
@@ -22,7 +22,7 @@ export default function DashboardHeader ({username}: DashboardReportProps) {
           marginBottom: 40,
         }}
       >
-        <LayoutDashboard color={theme.tint} size={32} />
+        <HeaderIcon iconName={icon} color={theme.tint} size={32}/>
         <Text
           style={{
             color: theme.text,

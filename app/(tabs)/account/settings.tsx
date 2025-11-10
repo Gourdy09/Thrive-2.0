@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft } from "lucide-react-native";
 import {
-  SafeAreaView,
   Text,
   TouchableOpacity,
   useColorScheme,
@@ -18,7 +17,7 @@ export default function SettingsScreen() {
   return (
     <>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-      <SafeAreaView 
+      <View 
         style={{ 
           flex: 1, 
           backgroundColor: theme.background 
@@ -64,7 +63,7 @@ export default function SettingsScreen() {
             Settings content will be added here...
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     </>
   );
 }
