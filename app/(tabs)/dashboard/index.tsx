@@ -1,5 +1,5 @@
-import DashboardReport from "@/components/DashboardReport";
-import GlucoseChart from "@/components/GlucoseChart";
+import DashboardReport from "@/components/dashboard/DashboardReport";
+import GlucoseChart from "@/components/dashboard/GlucoseChart";
 import DashboardHeader from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 
