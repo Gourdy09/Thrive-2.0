@@ -1,6 +1,7 @@
 // app/(tabs)/account/index.tsx
 "use client";
 
+import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useRouter } from "expo-router";
 import {
@@ -33,8 +34,8 @@ export default function AccountMain() {
       case "notifications":
         router.push("/(tabs)/account/notifications");
         break;
-      case "payments":
-        router.push("/(tabs)/account/payments");
+      case "subscriptions":
+        router.push("/(tabs)/account/subscriptions");
         break;
       case "help":
         router.push("/(tabs)/account/help");
@@ -48,6 +49,7 @@ export default function AccountMain() {
   };
 
   const handleLogout = () => {
+    // TODO: do supabase integration, remove tokens, etc.
     console.log("User logged out");
   };
 
@@ -61,30 +63,7 @@ export default function AccountMain() {
       }}
     >
       {/* Profile Header */}
-      <TouchableOpacity
-        onPress={() => handleNavigation("settings")}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          marginBottom: 32,
-        }}
-      >
-        <View
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            backgroundColor: theme.tint,
-            marginRight: 12,
-          }}
-        />
-        <View>
-          <Text style={{ color: theme.text, fontSize: 18, fontWeight: "600" }}>
-            Jin Yong Lim
-          </Text>
-          <Text style={{ color: theme.icon, fontSize: 14 }}>Edit profile</Text>
-        </View>
-      </TouchableOpacity>
+      <Header username="{UserName}" icon="CircleUser"/>
 
       {/* Settings */}
       <SectionItem
@@ -94,8 +73,8 @@ export default function AccountMain() {
       />
       <SectionItem
         icon={CreditCard}
-        label="Payment methods"
-        onPress={() => handleNavigation("payments")}
+        label="Subscriptions"
+        onPress={() => handleNavigation("subscriptions")}
       />
       <SectionItem
         icon={Bell}

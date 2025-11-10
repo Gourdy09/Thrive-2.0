@@ -14,6 +14,10 @@ interface DashboardHeaderProps {
     expectedChange: number;
 }
 
+interface ChartTypes {
+  GlucoseReading: object[]
+}
+
 export default function DashboardHeader({bloodGlucoseLevel, units, deltaSugar, expectedChange}: DashboardHeaderProps) {
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];

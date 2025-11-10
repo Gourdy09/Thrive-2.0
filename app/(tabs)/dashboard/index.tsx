@@ -1,8 +1,9 @@
-import DashboardHeader from "@/components/DashboardHeader";
 import DashboardReport from "@/components/DashboardReport";
+import GlucoseChart from "@/components/GlucoseChart";
+import DashboardHeader from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 
-import { View, useColorScheme } from "react-native";
+import { ScrollView, useColorScheme } from "react-native";
 
 export default function Dashboard() {
   const colorScheme = useColorScheme() ?? "dark";
@@ -15,7 +16,7 @@ export default function Dashboard() {
   const expectedChange = 0;
 
   return (
-    <View
+    <ScrollView
       style={{
         flex: 1,
         backgroundColor: theme.background,
@@ -24,7 +25,7 @@ export default function Dashboard() {
       }}
     >
       {/* Header */}
-      <DashboardHeader username={username} />
+      <DashboardHeader username={username} icon="LayoutDashboard"/>
 
       {/* Report Card */}
       <DashboardReport
@@ -33,6 +34,7 @@ export default function Dashboard() {
         deltaSugar={deltaSugar}
         expectedChange={expectedChange}
       />
-    </View>
+      <GlucoseChart/>
+    </ScrollView>
   );
 }
