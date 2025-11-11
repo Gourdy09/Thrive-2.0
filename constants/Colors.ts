@@ -1,5 +1,6 @@
 const tintColorLight = "#0a7ea4";
 const tintColorDark = "#fff";
+const primaryColor = "#f7b30c";
 
 export const Colors = {
   light: {
@@ -13,6 +14,8 @@ export const Colors = {
     cardSelected: "#e8f0ff",
     border: "#d4d4d8",
     shadow: "#00000033",
+    toggled: primaryColor,
+    toggleThumb: "#d4d4d8"
   },
   dark: {
     text: "#ECEDEE",
@@ -26,5 +29,7 @@ export const Colors = {
     cardSelected: "#262a33",
     border: "#2a2d32",
     shadow: "#00000055",
+    toggled: primaryColor,
+    toggleThumb: "#d4d4d8"
   },
 };
