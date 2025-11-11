@@ -4,6 +4,8 @@ import { View, useColorScheme } from "react-native";
 export default function Food() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
+  const username = "{UserName}";
+
   return (
     <View
       style={{
@@ -13,7 +15,7 @@ export default function Food() {
         paddingTop: 60,
       }}
     >
-      <Header username="{UserName}" icon="Hamburger"/>
+      <Header username={username} icon="LayoutDashboard" />
     </View>
   );
 }

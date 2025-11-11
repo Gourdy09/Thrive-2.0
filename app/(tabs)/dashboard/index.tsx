@@ -25,7 +25,7 @@ export default function Dashboard() {
       }}
     >
       {/* Header */}
-      <DashboardHeader username={username} icon="LayoutDashboard"/>
+      <Header username={username} icon="LayoutDashboard" />
 
       {/* Report Card */}
       <DashboardReport
@@ -34,7 +34,7 @@ export default function Dashboard() {
         deltaSugar={deltaSugar}
         expectedChange={expectedChange}
       />
-      <GlucoseChart/>
+      <GlucoseChart />
     </ScrollView>
   );
 }
