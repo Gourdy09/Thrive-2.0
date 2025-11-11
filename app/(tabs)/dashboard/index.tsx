@@ -1,10 +1,6 @@
 import DashboardReport from "@/components/DashboardReport";
-<<<<<<< Updated upstream
 import GlucoseChart from "@/components/GlucoseChart";
-import DashboardHeader from "@/components/Header";
-=======
 import Header from "@/components/Header";
->>>>>>> Stashed changes
 import { Colors } from "@/constants/Colors";
 
 import { ScrollView, useColorScheme } from "react-native";
@@ -29,11 +25,7 @@ export default function Dashboard() {
       }}
     >
       {/* Header */}
-<<<<<<< Updated upstream
-      <DashboardHeader username={username} icon="LayoutDashboard"/>
-=======
-      <Header username={username} icon="LayoutDashboard"/>
->>>>>>> Stashed changes
+      <Header username={username} icon="LayoutDashboard" />
 
       {/* Report Card */}
       <DashboardReport
@@ -42,7 +34,7 @@ export default function Dashboard() {
         deltaSugar={deltaSugar}
         expectedChange={expectedChange}
       />
-      <GlucoseChart/>
+      <GlucoseChart />
     </ScrollView>
   );
 }
