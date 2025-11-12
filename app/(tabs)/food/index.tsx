@@ -15,7 +15,7 @@ export default function Food() {
         paddingTop: 60,
       }}
     >
-      <Header username={username} icon="LayoutDashboard" />
+      <Header username={username} icon="Hamburger" />
     </View>
   );
 }
