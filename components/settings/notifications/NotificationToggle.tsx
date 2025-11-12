@@ -18,9 +18,10 @@ export default function NotificationToggle({ name, toggled }: NotifcationToggleP
         <View style={{
             flexDirection: "row",
             backgroundColor: theme.cardBackground,
-            borderColor: theme.border,
-            borderWidth: 1,
-            padding: 12
+            paddingVertical: 14,
+            paddingHorizontal: 24,
+            justifyContent: 'space-between',
+            borderRadius: 16,
         }}>
             <Text style={{
                 color: theme.text
@@ -28,10 +29,10 @@ export default function NotificationToggle({ name, toggled }: NotifcationToggleP
                 {name}
             </Text>
             <Switch
-                trackColor={{ false: theme.shadow, true: theme.toggled }} // Customize track colors
-                thumbColor={"#d4d4d8"} // Customize thumb colors
-                onValueChange={toggleSwitch} // Function to call when value changes
-                value={isEnabled} // Current state of the switch
+                trackColor={{ false: theme.shadow, true: theme.toggled }}
+                thumbColor={"#d4d4d8"}
+                onValueChange={toggleSwitch}
+                value={isEnabled}
             />
         </View>
     )
