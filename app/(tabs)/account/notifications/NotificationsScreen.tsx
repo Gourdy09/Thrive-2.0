@@ -1,10 +1,15 @@
-import BloodsugarNotification from "@/components/settings/notifications/BloodsugarNotification";
-import NotificationToggle from "@/components/settings/notifications/NotificationToggle";
+import AlertsSection from "@/components/settings/notifications/AlertsSection";
+import BloodSugarThresholdsSection from "@/components/settings/notifications/BloodSugarThresholdsSection";
+import DeviceHealthSection from "@/components/settings/notifications/DeviceHealthSection";
+import ReportsSection from "@/components/settings/notifications/ReportsSection";
 import { Colors } from "@/constants/Colors";
+import { NotificationSettings } from "@/types/notifications";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Info } from "lucide-react-native";
 import React from "react";
 import {
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -13,17 +18,9 @@ import {
 } from "react-native";
 
 interface NotificationsScreenProps {
-  settings: {
-    bloodSugarAlerts: boolean;
-    medicationAlerts: boolean;
-    paymentAlerts: boolean;
-    bloodSugarThresholds: {
-      above: number | null;
-      below: number | null;
-    };
-  };
-  onToggle: (key: keyof NotificationsScreenProps["settings"]) => void;
-  onSetThreshold: (type: "above" | "below", value: number) => void;
+  settings: NotificationSettings;
+  onToggle: (key: keyof NotificationSettings) => void;
+  onSetThreshold: (key: "alertAbove" | "alertBelow", value: string) => void;
 }
 
 export default function NotificationsScreen({
@@ -36,14 +33,19 @@ export default function NotificationsScreen({
   const router = useRouter();
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background, marginTop: 32 }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: theme.background, marginTop: 32 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={0}
+    >
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 20,
           paddingTop: 16,
-          paddingBottom: 16,
+          paddingBottom: 40,
         }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Header */}
         <View
@@ -107,82 +109,47 @@ export default function NotificationsScreen({
                   opacity: 0.9,
                 }}
               >
-                Manage alerts for blood sugar, medication reminders, and payment updates.
+                Manage alerts for blood sugar, medication reminders, device health, and reports.
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Notification Toggles */}
-        <Text
-          style={{
-            fontSize: 15,
-            fontWeight: "600",
-            color: theme.icon,
-            marginBottom: 14,
-            letterSpacing: -0.2,
-            textTransform: "uppercase",
-            opacity: 0.8,
-          }}
-        >
-          Alerts
-        </Text>
+        {/* Alerts Section */}
+        <AlertsSection
+          bloodSugarAlerts={settings.bloodSugarAlerts}
+          medicationAlerts={settings.medicationAlerts}
+          paymentAlerts={settings.paymentAlerts}
+          onToggle={onToggle}
+        />
 
-        <View
-          style={{
-            backgroundColor: theme.cardBackground,
-            borderColor: theme.border,
-            borderWidth: 2,
-            borderRadius: 16,
-            marginBottom: 24,
-          }}
-        >
-          <NotificationToggle
-            name="Blood Sugar Alerts"
-            toggled={settings.bloodSugarAlerts}
-            onToggle={() => onToggle("bloodSugarAlerts")}
-          />
-          <NotificationToggle
-            name="Medication Alerts"
-            toggled={settings.medicationAlerts}
-            onToggle={() => onToggle("medicationAlerts")}
-          />
-          <NotificationToggle
-            name="Payment Alerts"
-            toggled={settings.paymentAlerts}
-            onToggle={() => onToggle("paymentAlerts")}
-          />
-        </View>
+        {/* Blood Sugar Thresholds Section */}
+        <BloodSugarThresholdsSection
+          alertAbove={settings.alertAbove}
+          alertBelow={settings.alertBelow}
+          rapidRise={settings.rapidRise}
+          rapidFall={settings.rapidFall}
+          predictiveAlerts={settings.predictiveAlerts}
+          onToggle={onToggle}
+          onSetThreshold={onSetThreshold}
+        />
 
-        {/* Blood Sugar Threshold Settings */}
-        <Text
-          style={{
-            fontSize: 15,
-            fontWeight: "600",
-            color: theme.icon,
-            marginBottom: 14,
-            letterSpacing: -0.2,
-            textTransform: "uppercase",
-            opacity: 0.8,
-          }}
-        >
-          Blood Sugar Thresholds
-        </Text>
+        {/* Device & Data Health Section */}
+        <DeviceHealthSection
+          sensorSignalLost={settings.sensorSignalLost}
+          batteryLow={settings.batteryLow}
+          dataSyncError={settings.dataSyncError}
+          onToggle={onToggle}
+        />
 
-        <View
-          style={{
-            backgroundColor: theme.cardBackground,
-            borderColor: theme.border,
-            borderWidth: 2,
-            borderRadius: 16,
-          }}
-        >
-          <BloodsugarNotification />
-        </View>
-
-        {/* Email Notifications */}
-        
+        {/* Reports & Insights Section */}
+        <ReportsSection
+          dailySummary={settings.dailySummary}
+          weeklySummary={settings.weeklySummary}
+          timeInRangeReport={settings.timeInRangeReport}
+          onToggle={onToggle}
+        />
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
