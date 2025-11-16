@@ -57,7 +57,6 @@ export default function useMockWebscrape(url: string) {
       setError(null);
       try {
         // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 800));
 
         const recipe = mockRecipes[url];
         if (recipe) {

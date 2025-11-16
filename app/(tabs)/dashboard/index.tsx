@@ -1,8 +1,7 @@
 import DashboardReport from "@/components/dashboard/DashboardReport";
 import GlucoseChart from "@/components/dashboard/GlucoseChart";
-import DashboardHeader from "@/components/Header";
+import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
-
 import { ScrollView, useColorScheme } from "react-native";
 
 export default function Dashboard() {
