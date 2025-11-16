@@ -1,38 +1,40 @@
-import { Colors } from '@/constants/Colors';
-import React, { useState } from 'react';
-import { Switch, Text, useColorScheme, View } from 'react-native';
+import { Colors } from "@/constants/Colors";
+import React from "react";
+import { Switch, Text, useColorScheme, View } from "react-native";
 
-interface NotifcationToggleProps {
-    name: string;
-    toggled: boolean;
+interface NotificationToggleProps {
+  name: string;
+  toggled: boolean;
+  onToggle: () => void;
 }
 
-export default function NotificationToggle({ name, toggled }: NotifcationToggleProps) {
-    const colorScheme = useColorScheme() ?? "dark";
-    const theme = Colors[colorScheme];
-    const [isEnabled, setIsEnabled] = useState(true);
+export default function NotificationToggle({
+  name,
+  toggled,
+  onToggle,
+}: NotificationToggleProps) {
+  const colorScheme = useColorScheme() ?? "dark";
+  const theme = Colors[colorScheme];
 
-    const toggleSwitch = () => setIsEnabled(previousState => !previousState);
-
-    return (
-        <View style={{
-            flexDirection: "row",
-            backgroundColor: theme.cardBackground,
-            borderColor: theme.border,
-            borderWidth: 1,
-            padding: 12
-        }}>
-            <Text style={{
-                color: theme.text
-            }}>
-                {name}
-            </Text>
-            <Switch
-                trackColor={{ false: theme.shadow, true: theme.toggled }} // Customize track colors
-                thumbColor={"#d4d4d8"} // Customize thumb colors
-                onValueChange={toggleSwitch} // Function to call when value changes
-                value={isEnabled} // Current state of the switch
-            />
-        </View>
-    )
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderBottomWidth: 1.5,
+        borderBottomColor: theme.border,
+      }}
+    >
+      <Text style={{ color: theme.text, fontWeight: "500" }}>{name}</Text>
+      <Switch
+        trackColor={{ false: theme.shadow, true: theme.toggled }}
+        thumbColor={"#d4d4d8"}
+        onValueChange={onToggle}
+        value={toggled}
+      />
+    </View>
+  );
 }
