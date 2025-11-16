@@ -1,24 +1,21 @@
 import { Colors } from "@/constants/Colors";
-import {
-  ChevronDown,
-  ChevronUp,
-  Droplet,
-} from "lucide-react-native";
+import { ChevronDown, ChevronUp, Droplet } from "lucide-react-native";
 import React from "react";
 import { Text, View, useColorScheme } from "react-native";
 
 interface DashboardHeaderProps {
-    bloodGlucoseLevel: number;
-    units: string;
-    deltaSugar: number;
-    expectedChange: number;
+  bloodGlucoseLevel: number;
+  units: string;
+  deltaSugar: number;
+  expectedChange: number;
 }
 
-interface ChartTypes {
-  GlucoseReading: object[]
-}
-
-export default function DashboardHeader({bloodGlucoseLevel, units, deltaSugar, expectedChange}: DashboardHeaderProps) {
+export default function DashboardHeader({
+  bloodGlucoseLevel,
+  units,
+  deltaSugar,
+  expectedChange,
+}: DashboardHeaderProps) {
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
   const Username = "{UserName}";
