@@ -1,4 +1,4 @@
-import NotificationToggle from "@/components/settings/notifications/NotificationToggle";
+import NotificationToggle from "@/components/account/notifications/NotificationToggle";
 import { Colors } from "@/constants/Colors";
 import React, { useState } from "react";
 import { Text, TextInput, useColorScheme, View } from "react-native";

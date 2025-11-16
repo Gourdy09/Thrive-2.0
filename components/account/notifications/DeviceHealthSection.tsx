@@ -1,21 +1,21 @@
-import NotificationToggle from "@/components/settings/notifications/NotificationToggle";
+import NotificationToggle from "@/components/account/notifications/NotificationToggle";
 import { Colors } from "@/constants/Colors";
 import React from "react";
 import { Text, useColorScheme, View } from "react-native";
 
-interface ReportsSectionProps {
-  dailySummary: boolean;
-  weeklySummary: boolean;
-  timeInRangeReport: boolean;
-  onToggle: (key: "dailySummary" | "weeklySummary" | "timeInRangeReport") => void;
+interface DeviceHealthSectionProps {
+  sensorSignalLost: boolean;
+  batteryLow: boolean;
+  dataSyncError: boolean;
+  onToggle: (key: "sensorSignalLost" | "batteryLow" | "dataSyncError") => void;
 }
 
-export default function ReportsSection({
-  dailySummary,
-  weeklySummary,
-  timeInRangeReport,
+export default function DeviceHealthSection({
+  sensorSignalLost,
+  batteryLow,
+  dataSyncError,
   onToggle,
-}: ReportsSectionProps) {
+}: DeviceHealthSectionProps) {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
@@ -32,7 +32,7 @@ export default function ReportsSection({
           opacity: 0.8,
         }}
       >
-        Reports & Insights
+        Device & Data Health
       </Text>
 
       <View
@@ -45,19 +45,19 @@ export default function ReportsSection({
         }}
       >
         <NotificationToggle
-          name="Daily Summary"
-          toggled={dailySummary}
-          onToggle={() => onToggle("dailySummary")}
+          name="Sensor Signal Lost"
+          toggled={sensorSignalLost}
+          onToggle={() => onToggle("sensorSignalLost")}
         />
         <NotificationToggle
-          name="Weekly Summary"
-          toggled={weeklySummary}
-          onToggle={() => onToggle("weeklySummary")}
+          name="Battery Low"
+          toggled={batteryLow}
+          onToggle={() => onToggle("batteryLow")}
         />
         <NotificationToggle
-          name="Time-in-Range Report"
-          toggled={timeInRangeReport}
-          onToggle={() => onToggle("timeInRangeReport")}
+          name="Data Sync Error"
+          toggled={dataSyncError}
+          onToggle={() => onToggle("dataSyncError")}
         />
       </View>
     </>
