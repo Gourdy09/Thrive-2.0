@@ -24,6 +24,7 @@ import {
 } from "react-native";
 
 interface RecipeData {
+  id: string;
   title: string;
   imageUrl: string;
   ingredients: string[];
@@ -31,7 +32,6 @@ interface RecipeData {
 }
 
 interface FoodScreenProps {
-  recipeUrls?: string[];
   username?: string;
 }
 
@@ -73,29 +73,10 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   );
 };
 
-const RecipeCard = ({ url }: { url: string }) => {
+const RecipeCard: React.FC<RecipeData> = ({ title, imageUrl, ingredients }) => {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
-  const { recipeData, loading } = useMockWebscrape(url);
   const [isBookmarked, setIsBookmarked] = useState(false);
-
-  if (loading) {
-    return (
-      <View
-        style={{
-          width: 280,
-          marginRight: 16,
-          justifyContent: "center",
-          alignItems: "center",
-          height: 200,
-        }}
-      >
-        <Text style={{ color: theme.text }}>Loading...</Text>
-      </View>
-    );
-  }
-
-  if (!recipeData) return null;
 
   return (
     <View
@@ -108,7 +89,7 @@ const RecipeCard = ({ url }: { url: string }) => {
       }}
     >
       <RNImage
-        source={{ uri: recipeData.imageUrl }}
+        source={{ uri: imageUrl }}
         style={{ width: "100%", height: 160 }}
         resizeMode="cover"
       />
@@ -143,10 +124,10 @@ const RecipeCard = ({ url }: { url: string }) => {
             color: theme.text,
           }}
         >
-          {recipeData.title}
+          {title}
         </Text>
         <Text style={{ fontSize: 12, color: theme.icon }}>
-          {recipeData.ingredients.slice(0, 3).join(", ")}
+          {ingredients.slice(0, 3).join(", ")}
         </Text>
       </View>
     </View>
@@ -154,21 +135,13 @@ const RecipeCard = ({ url }: { url: string }) => {
 };
 
 export default function FoodScreen({
-  recipeUrls,
   username = "User",
 }: FoodScreenProps) {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
-  // Fallback URLs in case props are missing
-  const defaultUrls = [
-    "https://www.simplyrecipes.com/citrus-marinated-chicken-breasts-recipe-11845630",
-    "https://www.nutrition.gov/recipes/oatmeal-pecan-waffles",
-    "https://www.allrecipes.com/recipe/21014/good-old-fashioned-pancakes/",
-  ];
-  const urlsToRender =
-    recipeUrls && recipeUrls.length > 0 ? recipeUrls : defaultUrls;
+  const { recipeData, loading, error } = useMockWebscrape();
 
   const handleSeeAll = () => router.push("/(tabs)/food/recipeScreen");
   const handleManualEntry = () => {
@@ -213,8 +186,34 @@ export default function FoodScreen({
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {urlsToRender.map((url, index) => (
-              <RecipeCard key={index} url={url} />
+            {loading && (
+              <View
+                style={{
+                  width: 280,
+                  marginRight: 16,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: 200,
+                }}
+              >
+                <Text style={{ color: theme.text }}>Loading...</Text>
+              </View>
+            )}
+            {error && (
+              <View
+                style={{
+                  width: 280,
+                  marginRight: 16,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: 200,
+                }}
+              >
+                <Text style={{ color: theme.text }}>Error: {error}</Text>
+              </View>
+            )}
+            {!loading && !error && recipeData.map((recipe) => (
+              <RecipeCard key={recipe.id} {...recipe} />
             ))}
           </ScrollView>
 

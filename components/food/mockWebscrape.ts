@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 
 interface RecipeData {
+  id: string;
   title: string;
   imageUrl: string;
   ingredients: string[];
   instructions: string[];
 }
 
-const mockRecipes: { [key: string]: RecipeData } = {
+const mockRecipes: { [key: string]: Omit<RecipeData, 'id'> } = {
   "https://www.simplyrecipes.com/citrus-marinated-chicken-breasts-recipe-11845630":
     {
       title: "Citrus Marinated Chicken",
@@ -46,8 +47,8 @@ const mockRecipes: { [key: string]: RecipeData } = {
   },
 };
 
-export default function useMockWebscrape(url: string) {
-  const [recipeData, setRecipeData] = useState<RecipeData | null>(null);
+export default function useMockWebscrape() {
+  const [recipeData, setRecipeData] = useState<RecipeData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,18 +58,16 @@ export default function useMockWebscrape(url: string) {
       setError(null);
       try {
         // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // TODO: FETCH API DATA
+        // Convert object to array of recipes
+        const recipesArray = Object.entries(mockRecipes).map(([key, value]) => ({
+          id: key,
+          ...value
+        }));
 
-        const recipe = mockRecipes[url];
-        if (recipe) {
-          setRecipeData({
-            title: recipe.title,
-            imageUrl: recipe.imageUrl,
-            ingredients: recipe.ingredients,
-            instructions: recipe.instructions,
-          });
-        } else {
-          setError("Recipe not found");
-        }
+        setRecipeData(recipesArray);
       } catch (e) {
         console.error("Fetching Error:", e);
         setError(e instanceof Error ? e.message : "An error occurred");
@@ -77,10 +76,8 @@ export default function useMockWebscrape(url: string) {
       }
     };
 
-    if (url) {
-      loadRecipeData();
-    }
-  }, [url]);
+    loadRecipeData();
+  }, []);
 
   return { recipeData, loading, error };
 }
