@@ -1,11 +1,9 @@
-import DashboardHeader from "@/components/DashboardHeader";
 import DashboardReport from "@/components/DashboardReport";
+import GlucoseChart from "@/components/GlucoseChart";
+import DashboardHeader from "@/components/Header";
 import { Colors } from "@/constants/Colors";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useIsFocused } from '@react-navigation/native';
-import React, { useEffect, useState } from "react";
-import { Dimensions, ScrollView, View, useColorScheme } from "react-native";
-import { LineChart } from 'react-native-chart-kit';
+
+import { ScrollView, useColorScheme } from "react-native";
 
 export default function Dashboard() {
   const colorScheme = useColorScheme() ?? "dark";
@@ -128,7 +126,7 @@ export default function Dashboard() {
       }}
     >
       {/* Header */}
-      <DashboardHeader username={username} />
+      <DashboardHeader username={username} icon="LayoutDashboard"/>
 
       {/* Report Card */}
       <DashboardReport
@@ -137,60 +135,7 @@ export default function Dashboard() {
         deltaSugar={deltaSugar}
         expectedChange={expectedChange}
       />
-
-      <ScrollView
-        ref={scrollViewRef}
-        horizontal
-        showsHorizontalScrollIndicator={true}
-        contentContainerStyle={{ paddingVertical: 20 }}
-        onLayout={() => {
-          const currentHour = new Date().getHours();
-          const screenWidth = Dimensions.get("window").width;
-          const hourWidth = chartWidth / 24;
-          const scrollX = (currentHour * hourWidth) - (screenWidth / 2) + (hourWidth / 2);
-          
-          setTimeout(() => {
-            scrollViewRef.current?.scrollTo({ x: Math.max(0, scrollX), animated: false });
-          }, 100);
-        }}
-      >
-      <View style={{ position: 'relative' }}>
-          <View
-            style={{
-              position: 'absolute',
-              left: (new Date().getHours() * (chartWidth / 24)) - 20,
-              top: 0,
-              width: 40,
-              height: 250,
-              backgroundColor: '#4A90E2' + '40',
-              borderRadius: 8,
-              zIndex: 1,
-            }}
-          />
-      <LineChart
-      data={chartData}
-      width={chartWidth}
-      height = {250}
-      yAxisSuffix="mg/dL"
-      yAxisInterval={1}
-      fromZero={false}
-      segments={4}   
-      chartConfig={{
-        backgroundColor: theme.background,
-        backgroundGradientFrom: theme.background,
-        backgroundGradientTo: theme.background,
-        decimalPlaces: 0,
-        color: () => theme.text,
-        labelColor: () => theme.text, 
-        propsForDots: { r: "3"}, 
-      }}
-      bezier
-      style={{
-        borderRadius: 16,
-        marginTop:20,
-      }}
-    />
-    </View>
+      <GlucoseChart/>
     </ScrollView>
     </View>
   );
