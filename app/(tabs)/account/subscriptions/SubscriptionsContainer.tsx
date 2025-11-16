@@ -22,8 +22,8 @@ export default function PaymentsContainer() {
   const onChangePlan = async (newPlan: string) => {
     console.log("Container: Changing plan to", newPlan);
     // TODO: update Supabase here
-    setCurrentPlan(newPlan);    // disables the new current plan
-    setSelectedPlan(newPlan);   // persists highlight
+    setCurrentPlan(newPlan); // disables the new current plan
+    setSelectedPlan(newPlan); // persists highlight
   };
 
   if (loading) return null;
