@@ -1,5 +1,4 @@
 console.log("=== foodScreen.tsx loaded ===");
-
 import useMockWebscrape from "@/components/food/mockWebscrape";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
@@ -14,7 +13,6 @@ import React, { useState } from "react";
 import {
   Alert,
   Pressable,
-  Image as RNImage,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,6 +20,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import Popup from "./extendedRecipeInfomodal";
 
 interface RecipeData {
   title: string;
@@ -39,7 +38,7 @@ interface CustomButtonProps {
   title: string;
   onPress: () => void;
   disabled?: boolean;
-  icon?: React.ComponentType<{ size?: number; color?: string }>;
+  icon: React.ComponentType<{ size: number; color: string }>;
 }
 
 const CustomButton: React.FC<CustomButtonProps> = ({
@@ -73,6 +72,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   );
 };
 
+<<<<<<< Updated upstream
 const RecipeCard = ({ url }: { url: string }) => {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
@@ -157,10 +157,14 @@ export default function FoodScreen({
   recipeUrls,
   username = "User",
 }: FoodScreenProps) {
+=======
+export default function FoodScreen({ username = "User" }: FoodScreenProps) {
+>>>>>>> Stashed changes
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
+<<<<<<< Updated upstream
   // Fallback URLs in case props are missing
   const defaultUrls = [
     "https://www.simplyrecipes.com/citrus-marinated-chicken-breasts-recipe-11845630",
@@ -169,8 +173,18 @@ export default function FoodScreen({
   ];
   const urlsToRender =
     recipeUrls && recipeUrls.length > 0 ? recipeUrls : defaultUrls;
+=======
+  const [isPopUpVisible, setIsPopUpVisible] = useState(false);
+  const [selectedRecipeID, setSelectedRecipeID] = useState<string>("");
+  const { recipeData, loading, error } = useMockWebscrape();
+>>>>>>> Stashed changes
 
-  const handleSeeAll = () => router.push("/(tabs)/food/recipeScreen");
+  const handleRecipePress = (recipeID: string) => {
+    setSelectedRecipeID(recipeID);
+    setIsPopUpVisible(true);
+  };
+
+  const handleSeeAll = () => router.push("/(tabs)/food/allRecipesScreen");
   const handleManualEntry = () => {
     Alert.alert("Manual Entry", "Manual Entry Pressed");
     router.push("/(tabs)/food/manualEntryScreen");
@@ -213,9 +227,52 @@ export default function FoodScreen({
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+<<<<<<< Updated upstream
             {urlsToRender.map((url, index) => (
               <RecipeCard key={index} url={url} />
             ))}
+=======
+            {loading && (
+              <View
+                style={{
+                  width: 280,
+                  marginRight: 16,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: 200,
+                }}
+              >
+                <Text style={{ color: theme.text }}>Loading...</Text>
+              </View>
+            )}
+            {error && (
+              <View
+                style={{
+                  width: 280,
+                  marginRight: 16,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: 200,
+                }}
+              >
+                <Text style={{ color: theme.text }}>Error: {error}</Text>
+              </View>
+            )}
+            {!loading &&
+              !error &&
+              recipeData.map((recipe) => (
+                <RecipeCard key={recipe.id} {...recipe} />
+              ))}
+
+            <Popup
+              visible={isPopUpVisible}
+              onClose={() => setIsPopUpVisible(false)}
+              title="Recipe Details"
+              recipeId={selectedRecipeID}
+            >
+              <Text> Additional details....</Text>
+            </Popup>
+>>>>>>> Stashed changes
           </ScrollView>
 
           <View style={styles.buttonContainer}>
