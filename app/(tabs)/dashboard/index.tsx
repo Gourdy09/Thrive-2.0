@@ -2,7 +2,10 @@ import DashboardReport from "@/components/dashboard/DashboardReport";
 import GlucoseChart from "@/components/dashboard/GlucoseChart";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
-import { ScrollView, useColorScheme } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import React, { useEffect, useState } from "react";
+import { Dimensions, ScrollView, useColorScheme, View } from "react-native";
 
 export default function Dashboard() {
   const colorScheme = useColorScheme() ?? "dark";
@@ -14,8 +17,6 @@ export default function Dashboard() {
   const deltaSugar = -0;
   const expectedChange = 0;
 
-<<<<<<< Updated upstream
-=======
   interface GlucoseReading {
     value: number;
     timestamp: Date;
@@ -129,9 +130,8 @@ export default function Dashboard() {
     ],
   };
 
->>>>>>> Stashed changes
   return (
-    <ScrollView
+    <View
       style={{
         flex: 1,
         backgroundColor: theme.background,
@@ -143,24 +143,16 @@ export default function Dashboard() {
       <Header username={username} icon="LayoutDashboard" />
 
       {/* Report Card */}
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
       <DashboardReport
         bloodGlucoseLevel={bloodGlucoseLevel}
         units={units}
         deltaSugar={deltaSugar}
         expectedChange={expectedChange}
       />
-<<<<<<< Updated upstream
-      <GlucoseChart />
-    </ScrollView>
-=======
       <ScrollView>
         <GlucoseChart />
       </ScrollView>
     </View>
->>>>>>> Stashed changes
   );
 }
