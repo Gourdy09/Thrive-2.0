@@ -1,14 +1,10 @@
 console.log("=== foodScreen.tsx loaded ===");
 import useMockWebscrape from "@/components/food/mockWebscrape";
+import RecipeCard from "@/components/food/RecipeCard";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useRouter } from "expo-router";
-import {
-  Bookmark,
-  Camera,
-  ChevronRight,
-  TableOfContents,
-} from "lucide-react-native";
+import { Camera, ChevronRight, TableOfContents } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Alert,
