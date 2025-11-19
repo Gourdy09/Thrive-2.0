@@ -1,7 +1,7 @@
-import AlertsSection from "@/components/settings/notifications/AlertsSection";
-import BloodSugarThresholdsSection from "@/components/settings/notifications/BloodSugarThresholdsSection";
-import DeviceHealthSection from "@/components/settings/notifications/DeviceHealthSection";
-import ReportsSection from "@/components/settings/notifications/ReportsSection";
+import AlertsSection from "@/components/account/notifications/AlertsSection";
+import BloodSugarThresholdsSection from "@/components/account/notifications/BloodSugarThresholdsSection";
+import DeviceHealthSection from "@/components/account/notifications/DeviceHealthSection";
+import ReportsSection from "@/components/account/notifications/ReportsSection";
 import { Colors } from "@/constants/Colors";
 import { NotificationSettings } from "@/types/notifications";
 import { useRouter } from "expo-router";
