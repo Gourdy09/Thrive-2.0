@@ -9,5 +9,5 @@ export default function FoodContainer() {
 
   const username = "UserName";
 
-  return <FoodScreen recipeUrls={recipeUrls} username={username} />;
+  return <FoodScreen username={username} />;
 }

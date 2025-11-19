@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 
 interface RecipeData {
   id: string;
+  id: string;
   title: string;
   imageUrl: string;
   ingredients: string[];
   instructions: string[];
 }
 
-const mockRecipes: { [key: string]: Omit<RecipeData, 'id'> } = {
+const mockRecipes: { [key: string]: Omit<RecipeData, "id"> } = {
   "https://www.simplyrecipes.com/citrus-marinated-chicken-breasts-recipe-11845630":
     {
       title: "Citrus Marinated Chicken",
@@ -58,14 +59,16 @@ export default function useMockWebscrape() {
       setError(null);
       try {
         // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         // TODO: FETCH API DATA
         // Convert object to array of recipes
-        const recipesArray = Object.entries(mockRecipes).map(([key, value]) => ({
-          id: key,
-          ...value
-        }));
+        const recipesArray = Object.entries(mockRecipes).map(
+          ([key, value]) => ({
+            id: key,
+            ...value,
+          })
+        );
 
         setRecipeData(recipesArray);
       } catch (e) {

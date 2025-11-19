@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
-import React, { useEffect, useState } from "react";
+import { default as React, default as React, useEffect, useState } from "react";
 import { Dimensions, ScrollView, useColorScheme, View } from "react-native";
 
 export default function Dashboard() {
@@ -35,15 +35,22 @@ export default function Dashboard() {
       try {
         const jsonValue = await AsyncStorage.getItem("SugarData");
         if (jsonValue != null) {
-          const parsed: GlucoseReading[] = JSON.parse(jsonValue).map((d: any) => ({
-            timestamp: new Date(d.timestamp),
-            value: d.value,
-          }));
+          const parsed: GlucoseReading[] = JSON.parse(jsonValue).map(
+            (d: any) => ({
+              timestamp: new Date(d.timestamp),
+              value: d.value,
+            })
+          );
           setGlucoseData(parsed);
         } else {
           const now = new Date();
           const mock: GlucoseReading[] = Array.from({ length: 8 }, (_, i) => ({
-            timestamp: new Date(now.getFullYear(), now.getMonth(), now.getDate(), i),
+            timestamp: new Date(
+              now.getFullYear(),
+              now.getMonth(),
+              now.getDate(),
+              i
+            ),
             value: 90 + Math.floor(Math.random() * 40),
           }));
           setGlucoseData(mock);
@@ -62,14 +69,16 @@ export default function Dashboard() {
       const currentHour = new Date().getHours();
       const screenWidth = Dimensions.get("window").width;
       const hourWidth = chartWidth / 24;
-      const scrollX = (currentHour * hourWidth) - (screenWidth / 2) + (hourWidth / 2);
+      const scrollX = currentHour * hourWidth - screenWidth / 2 + hourWidth / 2;
 
       setTimeout(() => {
-        scrollViewRef.current?.scrollTo({ x: Math.max(0, scrollX), animated: true });
+        scrollViewRef.current?.scrollTo({
+          x: Math.max(0, scrollX),
+          animated: true,
+        });
       }, 100);
     }
   };
-
 
   useEffect(() => {
     if (glucoseData.length > 0) {
@@ -83,17 +92,20 @@ export default function Dashboard() {
     }
   }, [isFocused]);
 
-
   useFocusEffect(
     React.useCallback(() => {
       if (scrollViewRef.current) {
         const currentHour = new Date().getHours();
         const screenWidth = Dimensions.get("window").width;
         const hourWidth = chartWidth / 24;
-        const scrollX = (currentHour * hourWidth) - (screenWidth / 2) + (hourWidth / 2);
+        const scrollX =
+          currentHour * hourWidth - screenWidth / 2 + hourWidth / 2;
 
         setTimeout(() => {
-          scrollViewRef.current?.scrollTo({ x: Math.max(0, scrollX), animated: false });
+          scrollViewRef.current?.scrollTo({
+            x: Math.max(0, scrollX),
+            animated: false,
+          });
         }, 100);
       }
     }, [chartWidth])
@@ -115,7 +127,7 @@ export default function Dashboard() {
       {
         data: hourlyValues,
       },
-    ]
+    ],
   };
 
   return (
@@ -131,7 +143,7 @@ export default function Dashboard() {
       <Header username={username} icon="LayoutDashboard" />
 
       {/* Report Card */}
-      
+
       <DashboardReport
         bloodGlucoseLevel={bloodGlucoseLevel}
         units={units}
@@ -139,8 +151,8 @@ export default function Dashboard() {
         expectedChange={expectedChange}
       />
       <ScrollView>
-      <GlucoseChart />
-    </ScrollView>
-    </View >
+        <GlucoseChart />
+      </ScrollView>
+    </View>
   );
 }

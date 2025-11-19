@@ -1,20 +1,14 @@
 console.log("=== foodScreen.tsx loaded ===");
-
 import useMockWebscrape from "@/components/food/mockWebscrape";
+import RecipeCard from "@/components/food/RecipeCard";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useRouter } from "expo-router";
-import {
-  Bookmark,
-  Camera,
-  ChevronRight,
-  TableOfContents,
-} from "lucide-react-native";
+import { Camera, ChevronRight, TableOfContents } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Alert,
   Pressable,
-  Image as RNImage,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,7 +16,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-
+import Popup from "./ExtendedRecipeInfoModal";
 interface RecipeData {
   id: string;
   title: string;
@@ -39,7 +33,7 @@ interface CustomButtonProps {
   title: string;
   onPress: () => void;
   disabled?: boolean;
-  icon?: React.ComponentType<{ size?: number; color?: string }>;
+  icon: React.ComponentType<{ size: number; color: string }>;
 }
 
 const CustomButton: React.FC<CustomButtonProps> = ({
@@ -141,9 +135,16 @@ export default function FoodScreen({
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
+  const [isPopUpVisible, setIsPopUpVisible] = useState(false);
+  const [selectedRecipeID, setSelectedRecipeID] = useState<string>("");
   const { recipeData, loading, error } = useMockWebscrape();
 
-  const handleSeeAll = () => router.push("/(tabs)/food/recipeScreen");
+  const handleRecipePress = (recipeID: string) => {
+    setSelectedRecipeID(recipeID);
+    setIsPopUpVisible(true);
+  };
+
+  const handleSeeAll = () => router.push("/(tabs)/food/allRecipesScreen");
   const handleManualEntry = () => {
     Alert.alert("Manual Entry", "Manual Entry Pressed");
     router.push("/(tabs)/food/manualEntryScreen");
@@ -212,9 +213,20 @@ export default function FoodScreen({
                 <Text style={{ color: theme.text }}>Error: {error}</Text>
               </View>
             )}
-            {!loading && !error && recipeData.map((recipe) => (
-              <RecipeCard key={recipe.id} {...recipe} />
-            ))}
+            {!loading &&
+              !error &&
+              recipeData.map((recipe) => (
+                <RecipeCard key={recipe.id} {...recipe} />
+              ))}
+
+            <Popup
+              visible={isPopUpVisible}
+              onClose={() => setIsPopUpVisible(false)}
+              title="Recipe Details"
+              recipeId={selectedRecipeID}
+            >
+              <Text> Additional details....</Text>
+            </Popup>
           </ScrollView>
 
           <View style={styles.buttonContainer}>
