@@ -16,8 +16,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import Popup from "./extendedRecipeInfomodal";
-
+import Popup from "./ExtendedRecipeInfoModal";
 interface RecipeData {
   title: string;
   imageUrl: string;
@@ -68,83 +67,21 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   );
 };
 
-const RecipeCard: React.FC<RecipeData> = ({ title, imageUrl, ingredients }) => {
-  const colorScheme = useColorScheme() ?? "dark";
-  const theme = Colors[colorScheme];
-  const [isBookmarked, setIsBookmarked] = useState(false);
-
-  return (
-    <View
-      style={{
-        backgroundColor: theme.cardBackground,
-        borderRadius: 12,
-        overflow: "hidden",
-        marginRight: 16,
-        width: 280,
-      }}
-    >
-      <RNImage
-        source={{ uri: imageUrl }}
-        style={{ width: "100%", height: 160 }}
-        resizeMode="cover"
-      />
-      <TouchableOpacity
-        onPress={() => setIsBookmarked(!isBookmarked)}
-        style={{
-          position: "absolute",
-          top: 16,
-          right: 16,
-          backgroundColor: "white",
-          padding: 8,
-          borderRadius: 20,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.2,
-          shadowRadius: 2,
-          elevation: 2,
-        }}
-      >
-        <Bookmark
-          size={20}
-          color={isBookmarked ? "#FF6B6B" : "#666"}
-          fill={isBookmarked ? "#FF6B6B" : "none"}
-        />
-      </TouchableOpacity>
-      <View style={{ padding: 12 }}>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: "600",
-            marginBottom: 4,
-            color: theme.text,
-          }}
-        >
-          {title}
-        </Text>
-        <Text style={{ fontSize: 12, color: theme.icon }}>
-          {ingredients.slice(0, 3).join(", ")}
-        </Text>
-      </View>
-    </View>
-  );
-};
-
-export default function FoodScreen({
-  username = "User",
-}: FoodScreenProps) {
+export default function FoodScreen({ username = "User" }: FoodScreenProps) {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
+  const [isPopUpVisible, setIsPopUpVisible] = useState(false);
+  const [selectedRecipeID, setSelectedRecipeID] = useState<string>("");
   const { recipeData, loading, error } = useMockWebscrape();
->>>>>>> Stashed changes
 
   const handleRecipePress = (recipeID: string) => {
     setSelectedRecipeID(recipeID);
     setIsPopUpVisible(true);
   };
 
-  const handleSeeAll = () => router.push("/(tabs)/food/recipeScreen");
+  const handleSeeAll = () => router.push("/(tabs)/food/allRecipesScreen");
   const handleManualEntry = () => {
     Alert.alert("Manual Entry", "Manual Entry Pressed");
     router.push("/(tabs)/food/manualEntryScreen");
@@ -187,11 +124,6 @@ export default function FoodScreen({
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-<<<<<<< Updated upstream
-            {urlsToRender.map((url, index) => (
-              <RecipeCard key={index} url={url} />
-            ))}
-=======
             {loading && (
               <View
                 style={{
@@ -218,9 +150,20 @@ export default function FoodScreen({
                 <Text style={{ color: theme.text }}>Error: {error}</Text>
               </View>
             )}
-            {!loading && !error && recipeData.map((recipe) => (
-              <RecipeCard key={recipe.id} {...recipe} />
-            ))}
+            {!loading &&
+              !error &&
+              recipeData.map((recipe) => (
+                <RecipeCard key={recipe.id} {...recipe} />
+              ))}
+
+            <Popup
+              visible={isPopUpVisible}
+              onClose={() => setIsPopUpVisible(false)}
+              title="Recipe Details"
+              recipeId={selectedRecipeID}
+            >
+              <Text> Additional details....</Text>
+            </Popup>
           </ScrollView>
 
           <View style={styles.buttonContainer}>
