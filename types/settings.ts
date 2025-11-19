@@ -20,6 +20,9 @@ export interface CGMDevice {
     
     // Devices
     connectedDevices: CGMDevice[];
+
+    // You
+    gender: 'Male' | 'Female';
   }
   
   export interface BluetoothDevice {

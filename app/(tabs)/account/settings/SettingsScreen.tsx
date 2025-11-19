@@ -7,6 +7,7 @@ import ChangePasswordModal from "@/components/account/settings/modals/ChangePass
 import DeleteAccountModal from "@/components/account/settings/modals/DeleteAccountModal";
 import RenameDeviceModal from "@/components/account/settings/modals/RenameDeviceModal";
 import PreferencesSection from "@/components/account/settings/PrefrencesSection";
+import YouSection from "@/components/account/settings/YouSection";
 import { Colors } from "@/constants/Colors";
 import { AppSettings, BluetoothDevice, CGMDevice } from "@/types/settings";
 import { useRouter } from "expo-router";
@@ -44,6 +45,7 @@ interface SettingsScreenProps {
   onGlucoseUnitChange: (unit: "mg/dL" | "mmol/L") => void;
   onTimeFormatChange: (format: "12h" | "24h") => void;
   onThemeChange: (theme: "light" | "dark" | "system") => void;
+  onGenderChange: (gender: "Male" | "Female") => void;
   onStartBluetoothScan: () => void;
   onConnectDevice: (device: BluetoothDevice) => void;
   onSetActiveDevice: (deviceId: string) => void;
@@ -109,6 +111,17 @@ export default function SettingsScreen(props: SettingsScreenProps) {
           onChangeEmail={() => props.setEmailModalVisible(true)}
           onChangePassword={() => props.setPasswordModalVisible(true)}
           onDeleteAccount={() => props.setDeleteAccountModalVisible(true)}
+        />
+
+        {/* You section */}
+        <YouSection
+          onBirthdateChange={() => { }}
+          gender={props.settings.gender}
+          onGenderChange={props.onGenderChange}
+          onRaceChange={() => { }}
+          onBaselineGlucoseChange={() => { }}
+          onWeightChange={() => { }}
+          onDietaryRestrictionChange={() => { }}
         />
 
         {/* Preferences Section */}

@@ -10,6 +10,7 @@ export default function SettingsContainer() {
     timeFormat: "12h",
     theme: "system",
     connectedDevices: [],
+    gender: "Male",
   });
 
   // Modals
@@ -38,6 +39,7 @@ export default function SettingsContainer() {
         glucoseUnit: "mg/dL",
         timeFormat: "12h",
         theme: "system",
+        gender: "Male",
         connectedDevices: [
           {
             id: "1",
@@ -124,6 +126,12 @@ export default function SettingsContainer() {
 
   const handleThemeChange = (theme: "light" | "dark" | "system") => {
     const newSettings = { ...settings, theme };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
+  const handleGenderChange = (gender: "Male" | "Female") => {
+    const newSettings = { ...settings, gender };
     setSettings(newSettings);
     saveSettings(newSettings);
   };
@@ -266,6 +274,7 @@ export default function SettingsContainer() {
       onGlucoseUnitChange={handleGlucoseUnitChange}
       onTimeFormatChange={handleTimeFormatChange}
       onThemeChange={handleThemeChange}
+      onGenderChange={handleGenderChange}
       onStartBluetoothScan={startBluetoothScan}
       onConnectDevice={handleConnectDevice}
       onSetActiveDevice={handleSetActiveDevice}
