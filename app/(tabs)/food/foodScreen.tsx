@@ -16,9 +16,9 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import Popup from "./ExtendedRecipeInfoModal";
+import Popup from "./extendedRecipeInfoModal";
+
 interface RecipeData {
-  id: string;
   title: string;
   imageUrl: string;
   ingredients: string[];
@@ -26,6 +26,7 @@ interface RecipeData {
 }
 
 interface FoodScreenProps {
+  recipeUrls?: string[];
   username?: string;
 }
 
@@ -67,70 +68,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   );
 };
 
-const RecipeCard: React.FC<RecipeData> = ({ title, imageUrl, ingredients }) => {
-  const colorScheme = useColorScheme() ?? "dark";
-  const theme = Colors[colorScheme];
-  const [isBookmarked, setIsBookmarked] = useState(false);
-
-  return (
-    <View
-      style={{
-        backgroundColor: theme.cardBackground,
-        borderRadius: 12,
-        overflow: "hidden",
-        marginRight: 16,
-        width: 280,
-      }}
-    >
-      <RNImage
-        source={{ uri: imageUrl }}
-        style={{ width: "100%", height: 160 }}
-        resizeMode="cover"
-      />
-      <TouchableOpacity
-        onPress={() => setIsBookmarked(!isBookmarked)}
-        style={{
-          position: "absolute",
-          top: 16,
-          right: 16,
-          backgroundColor: "white",
-          padding: 8,
-          borderRadius: 20,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.2,
-          shadowRadius: 2,
-          elevation: 2,
-        }}
-      >
-        <Bookmark
-          size={20}
-          color={isBookmarked ? "#FF6B6B" : "#666"}
-          fill={isBookmarked ? "#FF6B6B" : "none"}
-        />
-      </TouchableOpacity>
-      <View style={{ padding: 12 }}>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: "600",
-            marginBottom: 4,
-            color: theme.text,
-          }}
-        >
-          {title}
-        </Text>
-        <Text style={{ fontSize: 12, color: theme.icon }}>
-          {ingredients.slice(0, 3).join(", ")}
-        </Text>
-      </View>
-    </View>
-  );
-};
-
-export default function FoodScreen({
-  username = "User",
-}: FoodScreenProps) {
+export default function FoodScreen({ username = "User" }: FoodScreenProps) {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
