@@ -2,11 +2,15 @@ import { useEffect, useState } from "react";
 
 interface RecipeData {
   id: string;
-  id: string;
   title: string;
   imageUrl: string;
   ingredients: string[];
   instructions: string[];
+  cT: string;
+  protein: number;
+  carbs: number;
+  tags: string[];
+  servingSize: string;
 }
 
 const mockRecipes: { [key: string]: Omit<RecipeData, "id"> } = {
@@ -23,6 +27,18 @@ const mockRecipes: { [key: string]: Omit<RecipeData, "id"> } = {
         "olive oil",
       ],
       instructions: ["Marinate chicken", "Grill until cooked", "Serve hot"],
+      cT: "2 hours 35 minutes",
+      protein: 50,
+      carbs: 1,
+      tags: [
+        "not spicy",
+        "High in Protein",
+        "Takes a while",
+        "Overnight",
+        "Lunch",
+        "Dinner",
+      ],
+      servingSize: "4-6",
     },
   "https://www.nutrition.gov/recipes/oatmeal-pecan-waffles": {
     title: "Oatmeal Pecan Waffles",
@@ -34,6 +50,11 @@ const mockRecipes: { [key: string]: Omit<RecipeData, "id"> } = {
       "Add wet ingredients",
       "Cook in waffle iron",
     ],
+    cT: "25 minutes",
+    protein: 14,
+    carbs: 50,
+    tags: ["kid freindly", "Breakfast"],
+    servingSize: "4 servings",
   },
   "https://www.allrecipes.com/recipe/21014/good-old-fashioned-pancakes/": {
     title: "Good Old Fashioned Pancakes",
@@ -45,6 +66,11 @@ const mockRecipes: { [key: string]: Omit<RecipeData, "id"> } = {
       "Pour batter on griddle",
       "Flip when bubbles form",
     ],
+    cT: "20 minutes",
+    protein: 5,
+    carbs: 22,
+    tags: ["Breakfast", "Highly Rated", "Short and Sweet"],
+    servingSize: "8 servings",
   },
 };
 
