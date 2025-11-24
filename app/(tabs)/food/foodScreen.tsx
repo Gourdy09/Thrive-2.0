@@ -78,13 +78,14 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
   const { recipeData, loading, error } = useMockWebscrape();
 
   const handleRecipePress = (recipeID: string) => {
+    console.log("Recipe pressed:", recipeID);
     setSelectedRecipeID(recipeID);
     setIsPopUpVisible(true);
   };
 
   const handleSeeAll = () => router.push("/(tabs)/food/allRecipesScreen");
   const handleManualEntry = () => {
-    Alert.alert("Manual Entry", "Manual Entry Pressed");
+    //Alert.alert("Manual Entry", "Manual Entry Pressed");
     router.push("/(tabs)/food/manualEntryScreen");
   };
   const handleCameraEntry = () =>
@@ -154,7 +155,11 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
             {!loading &&
               !error &&
               recipeData.map((recipe) => (
-                <RecipeCard key={recipe.id} {...recipe} />
+                <RecipeCard
+                  key={recipe.id}
+                  {...recipe}
+                  onPress={handleRecipePress}
+                />
               ))}
 
             <Popup
@@ -163,7 +168,7 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
               title="Recipe Details"
               recipeId={selectedRecipeID}
             >
-              <Text> Additional details....</Text>
+              <Text> More Stuff</Text>
             </Popup>
           </ScrollView>
 
