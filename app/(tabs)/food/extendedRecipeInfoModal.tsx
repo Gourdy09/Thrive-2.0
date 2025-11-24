@@ -5,10 +5,9 @@ import React from "react";
 import {
   Modal,
   Pressable,
-  StyleSheet,
   Text,
   useColorScheme,
-  View,
+  View
 } from "react-native";
 
 interface PopUpProps {
@@ -19,8 +18,7 @@ interface PopUpProps {
   recipeId: string;
 }
 
-const colorScheme = useColorScheme() ?? "dark";
-const theme = Colors[colorScheme];
+
 
 const Popup: React.FC<PopUpProps> = ({
   visible,
@@ -42,19 +40,22 @@ const Popup: React.FC<PopUpProps> = ({
       //animationType='Fade'
       onRequestClose={onClose}
     >
-      <View style={styles.overLay}>
-        <View style={styles.popup}>
-          {title && <Text style={styles.title}>{title}</Text>}
+      <View style={{
+        flex: 1,
+        backgroundColor: theme.background,
+      }}>
+        <View style={{
+          backgroundColor: theme.background,
+          padding: 10,
+          borderRadius: 10,
+        }}>
+          {title && <Text style={{
+            fontSize: 18,
+            fontWeight: "bold",
+            marginBottom: 15,
+          }}>{title}</Text>}
           {loading && (
-            <View
-              style={{
-                width: 280,
-                marginRight: 16,
-                justifyContent: "center",
-                alignItems: "center",
-                height: 200,
-              }}
-            >
+            <View>
               <Text style={{ color: theme.text }}>Loading...</Text>
             </View>
           )}
@@ -73,51 +74,26 @@ const Popup: React.FC<PopUpProps> = ({
           )}
           {!loading && !error && selectedRecipe && (
             <RecipeCard
-              key={selectedRecipe.id}
               {...selectedRecipe}
+              key={selectedRecipe.id}
               isInPopUp={true}
             />
           )}
-          <View style={styles.content}>{children}</View>
-          <Pressable style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeText}>Close</Text>
+          <View style={{marginBottom: 20,}}>{children}</View>
+          <Pressable style={{
+            backgroundColor: theme.tint,
+            padding: 12,
+            borderRadius: 10,
+            alignItems: "center",
+          }} onPress={onClose}>
+            <Text style={{
+              color: theme.background,
+              fontWeight: 400,
+            }}>Close</Text>
           </Pressable>
         </View>
       </View>
     </Modal>
   );
 };
-const styles = StyleSheet.create({
-  overLay: {
-    flex: 1,
-    backgroundColor: theme.background,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  popup: {
-    backgroundColor: theme.background,
-    padding: 10,
-    borderRadius: 10,
-    width: 100,
-    maxWidth: 400,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-  content: {
-    marginBottom: 20,
-  },
-  closeButton: {
-    backgroundColor: theme.tint,
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  closeText: {
-    color: theme.text,
-    fontWeight: 400,
-  },
-});
 export default Popup;

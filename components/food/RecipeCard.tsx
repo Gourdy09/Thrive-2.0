@@ -71,8 +71,6 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
         style={{
           backgroundColor: theme.cardBackground,
           borderRadius: 12,
-          overflow: "hidden",
-          width: 300,
         }}
       >
         <View style={{ position: "relative" }}>
