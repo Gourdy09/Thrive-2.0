@@ -45,7 +45,18 @@ interface SettingsScreenProps {
   onGlucoseUnitChange: (unit: "mg/dL" | "mmol/L") => void;
   onTimeFormatChange: (format: "12h" | "24h") => void;
   onThemeChange: (theme: "light" | "dark" | "system") => void;
+
+  // You Section Props
+  onBirthdateChange: (date: string) => void;
   onGenderChange: (gender: "Male" | "Female") => void;
+  onRaceChange: (race: string) => void;
+  onDiabetesTypeChange: (type: "Type 1" | "Type 2" | "Prediabetes" | "None") => void;
+  onBaselineGlucoseChange: (glucose: string) => void;
+  onHeightChange: (height: string) => void;
+  onWeightChange: (weight: string) => void;
+  onActivityLevelChange: (level: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active") => void;
+  onDietaryRestrictionChange: (restrictions: string[]) => void;
+
   onStartBluetoothScan: () => void;
   onConnectDevice: (device: BluetoothDevice) => void;
   onSetActiveDevice: (deviceId: string) => void;
@@ -115,13 +126,24 @@ export default function SettingsScreen(props: SettingsScreenProps) {
 
         {/* You section */}
         <YouSection
-          onBirthdateChange={() => { }}
-          gender={props.settings.gender}
+          birthdate={props.settings.you.birthdate}
+          onBirthdateChange={props.onBirthdateChange}
+          gender={props.settings.you.gender}
           onGenderChange={props.onGenderChange}
-          onRaceChange={() => { }}
-          onBaselineGlucoseChange={() => { }}
-          onWeightChange={() => { }}
-          onDietaryRestrictionChange={() => { }}
+          race={props.settings.you.race}
+          onRaceChange={props.onRaceChange}
+          diabetesType={props.settings.you.diabetesType}
+          onDiabetesTypeChange={props.onDiabetesTypeChange}
+          baselineGlucose={props.settings.you.baselineGlucose}
+          onBaselineGlucoseChange={props.onBaselineGlucoseChange}
+          height={props.settings.you.height}
+          onHeightChange={props.onHeightChange}
+          weight={props.settings.you.weight}
+          onWeightChange={props.onWeightChange}
+          activityLevel={props.settings.you.activityLevel}
+          onActivityLevelChange={props.onActivityLevelChange}
+          dietaryRestrictions={props.settings.you.dietaryRestrictions}
+          onDietaryRestrictionChange={props.onDietaryRestrictionChange}
         />
 
         {/* Preferences Section */}

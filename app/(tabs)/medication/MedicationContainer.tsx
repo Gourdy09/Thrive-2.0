@@ -1,0 +1,169 @@
+import { Medication, NextMedication } from "@/types/medication";
+import { useEffect, useState } from "react";
+import MedicationScreen from "./MedicationScreen";
+
+export default function MedicationContainer() {
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [nextMedication, setNextMedication] = useState<NextMedication | null>(null);
+
+  useEffect(() => {
+    loadMedications();
+  }, []);
+
+  useEffect(() => {
+    // Update next medication whenever medications change
+    calculateNextMedication();
+  }, [medications]);
+
+  const loadMedications = async () => {
+    try {
+      // TODO: Load from Supabase
+      // Mock data for testing
+      const mockMedications: Medication[] = [
+        {
+          id: "1",
+          name: "Metformin",
+          dosage: "500mg",
+          instructions: "Take with breakfast",
+          alarms: [
+            { id: "a1", time: "08:00", enabled: true },
+            { id: "a2", time: "20:00", enabled: true },
+          ],
+          color: "#4ECDC4",
+          isActive: true,
+        },
+        {
+          id: "2",
+          name: "Insulin",
+          dosage: "10 units",
+          instructions: "Take before meals",
+          alarms: [
+            { id: "a3", time: "07:30", enabled: true },
+            { id: "a4", time: "12:30", enabled: true },
+            { id: "a5", time: "18:30", enabled: true },
+          ],
+          color: "#FF6B6B",
+          isActive: true,
+        },
+      ];
+      setMedications(mockMedications);
+    } catch (error) {
+      console.error("Error loading medications:", error);
+    }
+  };
+
+  const calculateNextMedication = () => {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    let nextMed: NextMedication | null = null;
+    let minDiff = Infinity;
+
+    medications.forEach((medication) => {
+      medication.alarms.forEach((alarm) => {
+        if (!alarm.enabled) return;
+
+        const [hours, minutes] = alarm.time.split(":").map(Number);
+        const alarmMinutes = hours * 60 + minutes;
+
+        let diff = alarmMinutes - currentMinutes;
+        if (diff < 0) {
+          // If the time has passed today, consider it for tomorrow
+          diff += 24 * 60;
+        }
+
+        if (diff < minDiff) {
+          minDiff = diff;
+          nextMed = {
+            medication,
+            alarm,
+            timeUntil: formatTimeUntil(diff),
+          };
+        }
+      });
+    });
+
+    setNextMedication(nextMed);
+  };
+
+  const formatTimeUntil = (minutes: number): string => {
+    if (minutes < 60) {
+      return `in ${minutes} minute${minutes !== 1 ? "s" : ""}`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    if (remainingMinutes === 0) {
+      return `in ${hours} hour${hours !== 1 ? "s" : ""}`;
+    }
+
+    return `in ${hours}h ${remainingMinutes}m`;
+  };
+
+  const handleAddMedication = async (medication: Omit<Medication, "id">) => {
+    try {
+      const newMedication: Medication = {
+        ...medication,
+        id: Date.now().toString(),
+      };
+
+      // TODO: Save to Supabase
+      setMedications([...medications, newMedication]);
+    } catch (error) {
+      console.error("Error adding medication:", error);
+    }
+  };
+
+  const handleUpdateMedication = async (id: string, updates: Partial<Medication>) => {
+    try {
+      // TODO: Update in Supabase
+      setMedications(
+        medications.map((med) => (med.id === id ? { ...med, ...updates } : med))
+      );
+    } catch (error) {
+      console.error("Error updating medication:", error);
+    }
+  };
+
+  const handleDeleteMedication = async (id: string) => {
+    try {
+      // TODO: Delete from Supabase
+      setMedications(medications.filter((med) => med.id !== id));
+    } catch (error) {
+      console.error("Error deleting medication:", error);
+    }
+  };
+
+  const handleToggleAlarm = async (medicationId: string, alarmId: string, enabled: boolean) => {
+    try {
+      // TODO: Update in Supabase
+      setMedications(
+        medications.map((med) => {
+          if (med.id === medicationId) {
+            return {
+              ...med,
+              alarms: med.alarms.map((alarm) =>
+                alarm.id === alarmId ? { ...alarm, enabled } : alarm
+              ),
+            };
+          }
+          return med;
+        })
+      );
+    } catch (error) {
+      console.error("Error toggling alarm:", error);
+    }
+  };
+
+  return (
+    <MedicationScreen
+      medications={medications}
+      nextMedication={nextMedication}
+      onAddMedication={handleAddMedication}
+      onUpdateMedication={handleUpdateMedication}
+      onDeleteMedication={handleDeleteMedication}
+      onToggleAlarm={handleToggleAlarm}
+    />
+  );
+}

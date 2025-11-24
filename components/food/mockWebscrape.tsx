@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 
 interface RecipeData {
   id: string;
-  id: string;
   title: string;
   imageUrl: string;
   ingredients: string[];

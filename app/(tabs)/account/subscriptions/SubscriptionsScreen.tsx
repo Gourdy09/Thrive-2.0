@@ -98,7 +98,7 @@ export default function SubscriptionsScreen ({
     }}>
       <ScrollView 
         contentContainerStyle={{ 
-          paddingHorizontal: 20,
+          paddingHorizontal: 14,
           paddingTop: 16,
           paddingBottom: 16,
         }}

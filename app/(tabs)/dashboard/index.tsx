@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
-import { default as React, default as React, useEffect, useState } from "react";
+import { default as React, useEffect, useState } from "react";
 import { Dimensions, ScrollView, useColorScheme, View } from "react-native";
 
 export default function Dashboard() {
@@ -135,7 +135,7 @@ export default function Dashboard() {
       style={{
         flex: 1,
         backgroundColor: theme.background,
-        paddingHorizontal: 24,
+        paddingHorizontal: 14,
         paddingTop: 60,
       }}
     >

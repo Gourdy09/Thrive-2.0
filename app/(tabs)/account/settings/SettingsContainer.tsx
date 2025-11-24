@@ -10,7 +10,17 @@ export default function SettingsContainer() {
     timeFormat: "12h",
     theme: "system",
     connectedDevices: [],
-    gender: "Male",
+    you: {
+      birthdate: "",
+      gender: "Male",
+      race: "",
+      diabetesType: "None",
+      baselineGlucose: "",
+      height: "",
+      weight: "",
+      activityLevel: "Moderate",
+      dietaryRestrictions: [],
+    },
   });
 
   // Modals
@@ -39,7 +49,17 @@ export default function SettingsContainer() {
         glucoseUnit: "mg/dL",
         timeFormat: "12h",
         theme: "system",
-        gender: "Male",
+        you: {
+          birthdate: "01/15/1990",
+          gender: "Male",
+          race: "Asian",
+          diabetesType: "Type 2",
+          baselineGlucose: "100",
+          height: "68",
+          weight: "165",
+          activityLevel: "Moderate",
+          dietaryRestrictions: ["Lactose Intolerant"],
+        },
         connectedDevices: [
           {
             id: "1",
@@ -74,7 +94,6 @@ export default function SettingsContainer() {
   const saveSettings = async (newSettings: AppSettings) => {
     try {
       // TODO: Save to Supabase
-
       console.log("Settings saved:", newSettings);
     } catch (error) {
       console.error("Error saving settings:", error);
@@ -92,7 +111,6 @@ export default function SettingsContainer() {
   const handleChangePassword = async (currentPassword: string, newPassword: string) => {
     try {
       // TODO: Implement password change with Supabase Auth
-
       console.log("Password changed successfully");
       setPasswordModalVisible(false);
     } catch (error) {
@@ -103,7 +121,6 @@ export default function SettingsContainer() {
   const handleDeleteAccount = async () => {
     try {
       // TODO: Implement account deletion
-
       console.log("Account deleted");
       setDeleteAccountModalVisible(false);
     } catch (error) {
@@ -130,8 +147,84 @@ export default function SettingsContainer() {
     saveSettings(newSettings);
   };
 
+  // You Section Handlers
+  const handleBirthdateChange = (birthdate: string) => {
+    const newSettings = {
+      ...settings,
+      you: { ...settings.you, birthdate }
+    };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
   const handleGenderChange = (gender: "Male" | "Female") => {
-    const newSettings = { ...settings, gender };
+    const newSettings = {
+      ...settings,
+      you: { ...settings.you, gender }
+    };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
+  const handleRaceChange = (race: string) => {
+    const newSettings = {
+      ...settings,
+      you: { ...settings.you, race }
+    };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
+  const handleDiabetesTypeChange = (diabetesType: "Type 1" | "Type 2" | "Prediabetes" | "None") => {
+    const newSettings = {
+      ...settings,
+      you: { ...settings.you, diabetesType }
+    };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
+  const handleBaselineGlucoseChange = (baselineGlucose: string) => {
+    const newSettings = {
+      ...settings,
+      you: { ...settings.you, baselineGlucose }
+    };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
+  const handleHeightChange = (height: string) => {
+    const newSettings = {
+      ...settings,
+      you: { ...settings.you, height }
+    };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
+  const handleWeightChange = (weight: string) => {
+    const newSettings = {
+      ...settings,
+      you: { ...settings.you, weight }
+    };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
+  const handleActivityLevelChange = (activityLevel: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active") => {
+    const newSettings = {
+      ...settings,
+      you: { ...settings.you, activityLevel }
+    };
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
+  const handleDietaryRestrictionChange = (dietaryRestrictions: string[]) => {
+    const newSettings = {
+      ...settings,
+      you: { ...settings.you, dietaryRestrictions }
+    };
     setSettings(newSettings);
     saveSettings(newSettings);
   };
@@ -274,7 +367,15 @@ export default function SettingsContainer() {
       onGlucoseUnitChange={handleGlucoseUnitChange}
       onTimeFormatChange={handleTimeFormatChange}
       onThemeChange={handleThemeChange}
+      onBirthdateChange={handleBirthdateChange}
       onGenderChange={handleGenderChange}
+      onRaceChange={handleRaceChange}
+      onDiabetesTypeChange={handleDiabetesTypeChange}
+      onBaselineGlucoseChange={handleBaselineGlucoseChange}
+      onHeightChange={handleHeightChange}
+      onWeightChange={handleWeightChange}
+      onActivityLevelChange={handleActivityLevelChange}
+      onDietaryRestrictionChange={handleDietaryRestrictionChange}
       onStartBluetoothScan={startBluetoothScan}
       onConnectDevice={handleConnectDevice}
       onSetActiveDevice={handleSetActiveDevice}

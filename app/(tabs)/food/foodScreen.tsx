@@ -95,7 +95,7 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
       style={{
         flex: 1,
         backgroundColor: theme.background,
-        paddingHorizontal: 24,
+        paddingHorizontal: 14,
         paddingTop: 60,
       }}
     >
