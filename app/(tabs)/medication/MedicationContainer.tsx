@@ -1,4 +1,4 @@
-import { Medication, NextMedication } from "@/types/medication";
+import { DayOfWeek, getDayLabel, Medication, NextMedication } from "@/types/medication";
 import { useEffect, useState } from "react";
 import MedicationScreen from "./MedicationScreen";
 
@@ -11,14 +11,18 @@ export default function MedicationContainer() {
   }, []);
 
   useEffect(() => {
-    // Update next medication whenever medications change
     calculateNextMedication();
+    // Update every minute
+    const interval = setInterval(calculateNextMedication, 60000);
+    return () => clearInterval(interval);
   }, [medications]);
 
   const loadMedications = async () => {
     try {
       // TODO: Load from Supabase
-      // Mock data for testing
+      const allDays: DayOfWeek[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const weekdays: DayOfWeek[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+      
       const mockMedications: Medication[] = [
         {
           id: "1",
@@ -26,8 +30,8 @@ export default function MedicationContainer() {
           dosage: "500mg",
           instructions: "Take with breakfast",
           alarms: [
-            { id: "a1", time: "08:00", enabled: true },
-            { id: "a2", time: "20:00", enabled: true },
+            { id: "a1", time: "08:00", enabled: true, days: allDays },
+            { id: "a2", time: "20:00", enabled: true, days: allDays },
           ],
           color: "#4ECDC4",
           isActive: true,
@@ -38,9 +42,9 @@ export default function MedicationContainer() {
           dosage: "10 units",
           instructions: "Take before meals",
           alarms: [
-            { id: "a3", time: "07:30", enabled: true },
-            { id: "a4", time: "12:30", enabled: true },
-            { id: "a5", time: "18:30", enabled: true },
+            { id: "a3", time: "07:30", enabled: true, days: weekdays },
+            { id: "a4", time: "12:30", enabled: true, days: allDays },
+            { id: "a5", time: "18:30", enabled: true, days: allDays },
           ],
           color: "#FF6B6B",
           isActive: true,
@@ -54,6 +58,7 @@ export default function MedicationContainer() {
 
   const calculateNextMedication = () => {
     const now = new Date();
+    const currentDayIndex = now.getDay();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     let nextMed: NextMedication | null = null;
@@ -63,22 +68,44 @@ export default function MedicationContainer() {
       medication.alarms.forEach((alarm) => {
         if (!alarm.enabled) return;
 
-        const [hours, minutes] = alarm.time.split(":").map(Number);
-        const alarmMinutes = hours * 60 + minutes;
+        // Check each day in the alarm's repeat schedule
+        for (let daysAhead = 0; daysAhead < 7; daysAhead++) {
+          const checkDate = new Date(now);
+          checkDate.setDate(checkDate.getDate() + daysAhead);
+          const checkDayIndex = checkDate.getDay();
+          
+          // Get the day name for this index
+          const dayNames: DayOfWeek[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const dayName = dayNames[checkDayIndex];
+          
+          // Check if this alarm is scheduled for this day
+          if (!alarm.days.includes(dayName)) continue;
 
-        let diff = alarmMinutes - currentMinutes;
-        if (diff < 0) {
-          // If the time has passed today, consider it for tomorrow
-          diff += 24 * 60;
-        }
+          const [hours, minutes] = alarm.time.split(":").map(Number);
+          const alarmMinutes = hours * 60 + minutes;
 
-        if (diff < minDiff) {
-          minDiff = diff;
-          nextMed = {
-            medication,
-            alarm,
-            timeUntil: formatTimeUntil(diff),
-          };
+          let diff: number;
+          if (daysAhead === 0) {
+            // Today
+            diff = alarmMinutes - currentMinutes;
+            if (diff < 0) continue; // Already passed today
+          } else {
+            // Future days
+            diff = (daysAhead * 24 * 60) + alarmMinutes - currentMinutes;
+          }
+
+          if (diff >= 0 && diff < minDiff) {
+            minDiff = diff;
+            const targetDate = new Date(now);
+            targetDate.setDate(targetDate.getDate() + daysAhead);
+            
+            nextMed = {
+              medication,
+              alarm,
+              timeUntil: formatTimeUntil(diff),
+              dayLabel: getDayLabel(targetDate),
+            };
+          }
         }
       });
     });
@@ -94,11 +121,20 @@ export default function MedicationContainer() {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
 
-    if (remainingMinutes === 0) {
-      return `in ${hours} hour${hours !== 1 ? "s" : ""}`;
+    if (hours < 24) {
+      if (remainingMinutes === 0) {
+        return `in ${hours} hour${hours !== 1 ? "s" : ""}`;
+      }
+      return `in ${hours}h ${remainingMinutes}m`;
     }
 
-    return `in ${hours}h ${remainingMinutes}m`;
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    
+    if (remainingHours === 0) {
+      return `in ${days} day${days !== 1 ? "s" : ""}`;
+    }
+    return `in ${days}d ${remainingHours}h`;
   };
 
   const handleAddMedication = async (medication: Omit<Medication, "id">) => {

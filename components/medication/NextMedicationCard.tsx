@@ -1,6 +1,6 @@
 import { Colors } from "@/constants/Colors";
-import { NextMedication } from "@/types/medication";
-import { Bell, Clock } from "lucide-react-native";
+import { formatTime12Hour, NextMedication } from "@/types/medication";
+import { Bell, Calendar, Clock } from "lucide-react-native";
 import React from "react";
 import { Text, useColorScheme, View } from "react-native";
 
@@ -11,14 +11,6 @@ interface NextMedicationCardProps {
 export default function NextMedicationCard({ nextMedication }: NextMedicationCardProps) {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
-
-  const formatTime = (time24: string) => {
-    const [hours, minutes] = time24.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
-  };
 
   return (
     <View style={{ padding: 20 }}>
@@ -109,27 +101,54 @@ export default function NextMedicationCard({ nextMedication }: NextMedicationCar
               {nextMedication.medication.instructions}
             </Text>
           )}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginTop: 12,
-              backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
-              padding: 12,
-              borderRadius: 12,
-            }}
-          >
-            <Bell size={16} color={nextMedication.medication.color} />
-            <Text
+          
+          {/* Time and Day Display */}
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
+            <View
               style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: nextMedication.medication.color,
-                marginLeft: 8,
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                padding: 12,
+                borderRadius: 12,
               }}
             >
-              {formatTime(nextMedication.alarm.time)}
-            </Text>
+              <Bell size={16} color={nextMedication.medication.color} />
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  color: nextMedication.medication.color,
+                  marginLeft: 8,
+                }}
+              >
+                {formatTime12Hour(nextMedication.alarm.time)}
+              </Text>
+            </View>
+            
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                padding: 12,
+                borderRadius: 12,
+              }}
+            >
+              <Calendar size={16} color={theme.icon} />
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  color: theme.text,
+                  marginLeft: 8,
+                }}
+              >
+                {nextMedication.dayLabel}
+              </Text>
+            </View>
           </View>
         </View>
       </View>

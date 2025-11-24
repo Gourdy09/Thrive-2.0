@@ -1,7 +1,8 @@
 import ColorPicker from "@/components/medication/ColorPicker";
 import RemindersList from "@/components/medication/RemindersList";
 import { Colors } from "@/constants/Colors";
-import { Medication, MedicationAlarm } from "@/types/medication";
+import { DayOfWeek, Medication, MedicationAlarm } from "@/types/medication";
+import { X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -41,7 +42,6 @@ export default function MedicationFormModal({
   const theme = Colors[colorScheme];
   const isEditMode = !!medication;
 
-  // Form state
   const [medicationName, setMedicationName] = useState("");
   const [dosage, setDosage] = useState("");
   const [instructions, setInstructions] = useState("");
@@ -109,16 +109,18 @@ export default function MedicationFormModal({
   };
 
   const addAlarm = () => {
+    const allDays: DayOfWeek[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const newAlarm: MedicationAlarm = {
       id: Date.now().toString(),
-      time: "09:00",
+      time: "09:00", // 9:00 AM in 24-hour format
       enabled: true,
+      days: allDays, // Default to every day
     };
     setAlarms([...alarms, newAlarm]);
   };
 
-  const updateAlarm = (id: string, time: string) => {
-    setAlarms(alarms.map(alarm => alarm.id === id ? { ...alarm, time } : alarm));
+  const updateAlarm = (id: string, updatedAlarm: MedicationAlarm) => {
+    setAlarms(alarms.map(alarm => alarm.id === id ? updatedAlarm : alarm));
   };
 
   const removeAlarm = (id: string) => {
@@ -153,7 +155,7 @@ export default function MedicationFormModal({
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: 24,
+                marginBottom: 20,
               }}
             >
               <Text
@@ -166,7 +168,7 @@ export default function MedicationFormModal({
                 {isEditMode ? "Edit Medication" : "Add Medication"}
               </Text>
               <TouchableOpacity onPress={handleClose}>
-                <Text style={{ fontSize: 32, color: theme.icon }}>×</Text>
+                <X color={theme.icon}/>
               </TouchableOpacity>
             </View>
 
@@ -304,7 +306,7 @@ export default function MedicationFormModal({
                 padding: 18,
                 borderRadius: 12,
                 alignItems: "center",
-                marginBottom: 24,
+                marginBottom: 48,
               }}
             >
               <Text style={{ color: theme.background, fontWeight: "700", fontSize: 16 }}>

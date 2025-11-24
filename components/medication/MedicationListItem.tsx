@@ -1,5 +1,5 @@
 import { Colors } from "@/constants/Colors";
-import { Medication } from "@/types/medication";
+import { formatTime12Hour, Medication } from "@/types/medication";
 import { Bell, BellOff, ChevronRight } from "lucide-react-native";
 import React from "react";
 import { Text, TouchableOpacity, useColorScheme, View } from "react-native";
@@ -13,12 +13,25 @@ export default function MedicationListItem({ medication, onPress }: MedicationLi
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
-  const formatTime = (time24: string) => {
-    const [hours, minutes] = time24.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+  const getDaysLabel = (days: string[]) => {
+    if (days.length === 7) return "";
+    if (days.length === 5 && 
+        days.includes('Mon') && 
+        days.includes('Tue') && 
+        days.includes('Wed') && 
+        days.includes('Thu') && 
+        days.includes('Fri')) {
+      return " • Weekdays";
+    }
+    if (days.length === 2 && 
+        days.includes('Sat') && 
+        days.includes('Sun')) {
+      return " • Weekends";
+    }
+    if (days.length <= 3) {
+      return ` • ${days.join(', ')}`;
+    }
+    return ` • ${days.length} days`;
   };
 
   return (
@@ -94,7 +107,7 @@ export default function MedicationListItem({ medication, onPress }: MedicationLi
                       marginLeft: 4,
                     }}
                   >
-                    {formatTime(alarm.time)}
+                    {formatTime12Hour(alarm.time)}{getDaysLabel(alarm.days)}
                   </Text>
                 </View>
               ))}
