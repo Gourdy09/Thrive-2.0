@@ -5,6 +5,7 @@ import React from "react";
 import {
   Modal,
   Pressable,
+  ScrollView,
   Text,
   useColorScheme,
   View
@@ -39,10 +40,14 @@ const Popup: React.FC<PopUpProps> = ({
       transparent={true}
       //animationType='Fade'
       onRequestClose={onClose}
+      style={{
+        maxHeight: "90%"
+      }}
     >
-      <View style={{
+      <ScrollView style={{
         flex: 1,
         backgroundColor: theme.background,
+        
       }}>
         <View style={{
           backgroundColor: theme.background,
@@ -92,7 +97,7 @@ const Popup: React.FC<PopUpProps> = ({
             }}>Close</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </Modal>
   );
 };

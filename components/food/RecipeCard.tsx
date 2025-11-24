@@ -8,7 +8,7 @@ import {
   Text,
   TouchableOpacity,
   useColorScheme,
-  View,
+  View
 } from "react-native";
 interface RecipeData {
   id: string;
@@ -63,9 +63,29 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
+
+  const ingredientsListObject = ingredients.map((value, index) => ({
+    id: index.toString(),
+    title: value,
+  }));
+
+
+
+  type ItemProps = { title: string };
+  const Item = ({ title }: ItemProps) => (
+    <View style={{ flexDirection: "row", marginBottom: 4 }}>
+      <Text style={{ marginRight: 6, color: theme.text }}>•</Text>
+      <Text style={{ color: theme.text }}>{title}</Text>
+    </View>
+  );
+
   const [isBookmarked, setIsBookmarked] = useState(false);
   if (isInPopUp) {
-    const { cT, servingSize, tags } = props;
+    const { cT, servingSize, tags, instructions } = props;
+    const instructionsListObject = instructions.map((value, index) => ({
+      id: index.toString(),
+      title: value,
+    }));
     return (
       <ScrollView
         style={{
@@ -149,6 +169,26 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
           >
             INGREDIENTS
           </Text>
+          {ingredientsListObject.map((item) => (
+            <Item key={item.id} title={item.title} />
+          ))}
+
+
+          <Text
+            style={{
+              color: theme.text,
+              fontSize: 12,
+              fontWeight: "bold",
+              marginBottom: 10,
+              marginTop: 10,
+            }}
+          >
+            INSTRUCTIONS
+          </Text>
+          {instructionsListObject.map((item) => (
+            <Item key={item.id} title={item.title} />
+          ))}
+
         </View>
       </ScrollView>
     );
@@ -158,7 +198,6 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
         style={{
           backgroundColor: theme.cardBackground,
           borderRadius: 12,
-          overflow: "hidden",
           marginRight: 16,
           width: 280,
         }}
