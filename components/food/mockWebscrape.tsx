@@ -31,7 +31,6 @@ const mockRecipes: { [key: string]: Omit<RecipeData, "id"> } = {
       protein: 50,
       carbs: 1,
       tags: [
-        "not spicy",
         "High in Protein",
         "Takes a while",
         "Overnight",

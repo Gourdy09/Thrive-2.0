@@ -72,7 +72,11 @@ const Popup: React.FC<PopUpProps> = ({
             </View>
           )}
           {!loading && !error && selectedRecipe && (
-            <RecipeCard key={selectedRecipe.id} {...selectedRecipe} />
+            <RecipeCard
+              key={selectedRecipe.id}
+              {...selectedRecipe}
+              isInPopUp={true}
+            />
           )}
           <View style={styles.content}>{children}</View>
           <Pressable style={styles.closeButton} onPress={onClose}>

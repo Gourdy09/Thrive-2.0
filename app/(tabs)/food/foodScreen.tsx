@@ -168,7 +168,7 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
               title="Recipe Details"
               recipeId={selectedRecipeID}
             >
-              <Text> Additional details....</Text>
+              <Text> More Stuff</Text>
             </Popup>
           </ScrollView>
 

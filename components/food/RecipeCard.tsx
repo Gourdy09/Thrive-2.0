@@ -1,5 +1,6 @@
+import IconLoader from "@/app/(tabs)/food/IconLoader";
 import { Colors } from "@/constants/Colors";
-import { Bookmark, LucideClock } from "lucide-react-native";
+import { Bookmark, HandPlatter, LucideClock } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Image as RNImage,
@@ -9,7 +10,6 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-
 interface RecipeData {
   id: string;
   title: string;
@@ -30,7 +30,7 @@ interface PopUpInfo extends RecipeData {
   onPress?: (id: string) => void;
 }
 interface ListRecipeData extends RecipeData {
-  isInPop?: false;
+  isInPopUp?: false;
 }
 export type RecipeCardProps = PopUpInfo | ListRecipeData;
 
@@ -43,12 +43,14 @@ export const IconWrapper: React.FC<IconWrapperProps> = ({
   icon: Icon,
   text,
 }) => {
+  const colorScheme = useColorScheme() ?? "dark";
+  const theme = Colors[colorScheme];
   return (
     <View style={{ flexDirection: "row", alignItems: "center" }}>
       <View style={{ marginRight: 8 }}>
-        <Icon size={20} />
+        <Icon size={20} color={theme.icon} />
       </View>
-      <Text>{text}</Text>
+      <Text style={{ marginRight: 10, color: theme.text }}>{text}</Text>
     </View>
   );
 };
@@ -60,58 +62,96 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
 
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
+
   const [isBookmarked, setIsBookmarked] = useState(false);
   if (isInPopUp) {
-    const { cT } = props;
+    const { cT, servingSize, tags } = props;
     return (
       <ScrollView
         style={{
           backgroundColor: theme.cardBackground,
           borderRadius: 12,
           overflow: "hidden",
-          marginRight: 16,
           width: 300,
         }}
       >
-        <RNImage
-          source={{ uri: imageUrl }}
-          style={{ width: "100%", height: 160 }}
-          resizeMode="cover"
-        />
-        <TouchableOpacity
-          onPress={() => setIsBookmarked(!isBookmarked)}
-          style={{
-            position: "absolute",
-            top: 16,
-            right: 16,
-            backgroundColor: "white",
-            padding: 8,
-            borderRadius: 20,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.2,
-            shadowRadius: 2,
-            elevation: 2,
-          }}
-        >
-          <Bookmark
-            size={20}
-            color={isBookmarked ? "#FF6B6B" : "#666"}
-            fill={isBookmarked ? "#FF6B6B" : "none"}
+        <View style={{ position: "relative" }}>
+          <RNImage
+            source={{ uri: imageUrl }}
+            style={{ width: "100%", height: 250 }}
+            resizeMode="cover"
           />
-        </TouchableOpacity>
-        <Text
+          <TouchableOpacity
+            onPress={() => setIsBookmarked(!isBookmarked)}
+            style={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              backgroundColor: "white",
+              padding: 8,
+              borderRadius: 20,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.2,
+              shadowRadius: 2,
+              elevation: 2,
+            }}
+          >
+            <Bookmark
+              size={20}
+              color={isBookmarked ? "#FF6B6B" : "#666"}
+              fill={isBookmarked ? "#FF6B6B" : "none"}
+            />
+          </TouchableOpacity>
+        </View>
+        <View
           style={{
-            fontSize: 16,
-            fontWeight: "600",
-            marginBottom: 4,
-            color: theme.text,
+            backgroundColor: theme.background,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            marginTop: -20, // This creates the overlap effect
+            padding: 20,
           }}
         >
-          {title}
-        </Text>
-        <Text style={{ fontSize: 12 }}> Here are Tags</Text>
-        <IconWrapper icon={LucideClock} text={cT} />
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 16,
+            }}
+          >
+            <IconWrapper icon={LucideClock} text={cT} />
+            <IconWrapper icon={HandPlatter} text={servingSize} />
+          </View>
+          <Text
+            style={{
+              color: theme.text,
+              fontSize: 12,
+              fontWeight: "bold",
+              marginBottom: 10,
+            }}
+          >
+            TAGS
+          </Text>
+          {/* tags */}
+          {tags.map((tag) => {
+            const Icon = IconLoader(tag);
+            return Icon ? (
+              <IconWrapper key={tag} icon={Icon} text={tag} />
+            ) : null;
+          })}
+          <Text
+            style={{
+              color: theme.text,
+              fontSize: 12,
+              fontWeight: "bold",
+              marginBottom: 10,
+              marginTop: 10,
+            }}
+          >
+            INGREDIENTS
+          </Text>
+        </View>
       </ScrollView>
     );
   } else {
