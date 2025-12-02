@@ -165,7 +165,7 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
             <Popup
               visible={isPopUpVisible}
               onClose={() => setIsPopUpVisible(false)}
-              title="Recipe Details"
+              title=" "
               recipeId={selectedRecipeID}
             >
               <Text> More Stuff</Text>
