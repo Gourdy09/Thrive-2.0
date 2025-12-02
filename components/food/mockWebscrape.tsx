@@ -30,13 +30,7 @@ const mockRecipes: { [key: string]: Omit<RecipeData, "id"> } = {
       cT: "2 hours 35 minutes",
       protein: 50,
       carbs: 1,
-      tags: [
-        "High in Protein",
-        "Takes a while",
-        "Overnight",
-        "Lunch",
-        "Dinner",
-      ],
+      tags: ["High Protein", "Low Carb", "Gluten-free", "Lunch", "Dinner"],
       servingSize: "4-6",
     },
   "https://www.nutrition.gov/recipes/oatmeal-pecan-waffles": {
@@ -52,7 +46,7 @@ const mockRecipes: { [key: string]: Omit<RecipeData, "id"> } = {
     cT: "25 minutes",
     protein: 14,
     carbs: 50,
-    tags: ["kid freindly", "Breakfast"],
+    tags: ["Vegetarian", "Quick", "Breakfast"],
     servingSize: "4 servings",
   },
   "https://www.allrecipes.com/recipe/21014/good-old-fashioned-pancakes/": {
@@ -68,8 +62,56 @@ const mockRecipes: { [key: string]: Omit<RecipeData, "id"> } = {
     cT: "20 minutes",
     protein: 5,
     carbs: 22,
-    tags: ["Breakfast", "Highly Rated", "Short and Sweet"],
+    tags: ["Vegetarian", "Quick", "Breakfast"],
     servingSize: "8 servings",
+  },
+  "https://example.com/greek-salad": {
+    title: "Greek Salad",
+    imageUrl:
+      "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop",
+    ingredients: ["tomatoes", "cucumber", "feta cheese", "olives", "olive oil"],
+    instructions: [
+      "Chop vegetables",
+      "Crumble feta",
+      "Mix with dressing",
+    ],
+    cT: "15 minutes",
+    protein: 8,
+    carbs: 12,
+    tags: ["Vegetarian", "Quick", "Gluten-free", "Low Carb", "Lunch"],
+    servingSize: "2 servings",
+  },
+  "https://example.com/salmon-bowl": {
+    title: "Teriyaki Salmon Bowl",
+    imageUrl:
+      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop",
+    ingredients: ["salmon", "rice", "broccoli", "teriyaki sauce", "sesame seeds"],
+    instructions: [
+      "Cook salmon",
+      "Steam broccoli",
+      "Assemble bowl with rice",
+    ],
+    cT: "30 minutes",
+    protein: 35,
+    carbs: 45,
+    tags: ["High Protein", "Gluten-free", "Dinner", "Lunch"],
+    servingSize: "2 servings",
+  },
+  "https://example.com/veggie-stir-fry": {
+    title: "Quick Veggie Stir Fry",
+    imageUrl:
+      "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=400&fit=crop",
+    ingredients: ["mixed vegetables", "tofu", "soy sauce", "ginger", "garlic"],
+    instructions: [
+      "Heat oil in wok",
+      "Stir fry vegetables",
+      "Add sauce and tofu",
+    ],
+    cT: "15 minutes",
+    protein: 18,
+    carbs: 20,
+    tags: ["Vegan", "Vegetarian", "Quick", "Low Carb", "Dinner"],
+    servingSize: "3 servings",
   },
 };
 
@@ -86,7 +128,6 @@ export default function useMockWebscrape() {
         // Simulate API delay
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // TODO: FETCH API DATA
         // Convert object to array of recipes
         const recipesArray = Object.entries(mockRecipes).map(
           ([key, value]) => ({
