@@ -5,6 +5,9 @@ import {
   Moon,
   Sandwich,
   ThumbsUp,
+  FastForward,
+  Baby,
+  Drumstick,
 } from "lucide-react-native";
 import React from "react";
 
@@ -28,6 +31,15 @@ export default function IconLoader(
   }
   if (tag == "Highly Rated") {
     return ThumbsUp;
+  }
+  if (tag =="Short and Sweet") {
+    return FastForward;
+  }
+  if (tag=="kid freindly") {
+    return Baby;
+  }
+  if (tag =="High in Protein"){
+    return Drumstick;
   }
   return null;
 }

@@ -10,6 +10,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+
 interface RecipeData {
   id: string;
   title: string;
@@ -29,13 +30,15 @@ interface PopUpInfo extends RecipeData {
   isInPopUp: true;
   onPress?: (id: string) => void;
 }
+
 interface ListRecipeData extends RecipeData {
   isInPopUp?: false;
 }
+
 export type RecipeCardProps = PopUpInfo | ListRecipeData;
 
 interface IconWrapperProps {
-  icon: React.ComponentType<any>; // works for all Lucide icons
+  icon: React.ComponentType<any>;
   text: string;
 }
 
@@ -55,7 +58,6 @@ export const IconWrapper: React.FC<IconWrapperProps> = ({
   );
 };
 
-//OM iS A ASS
 const RecipeCard: React.FC<RecipeCardProps> = (props) => {
   const { id, title, imageUrl, ingredients } = props;
   const isInPopUp = "isInPopUp" in props && props.isInPopUp;
@@ -64,7 +66,9 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
   const theme = Colors[colorScheme];
 
   const [isBookmarked, setIsBookmarked] = useState(false);
+
   if (isInPopUp) {
+<<<<<<< Updated upstream
     const { cT, servingSize, tags } = props;
     return (
       <ScrollView
@@ -73,8 +77,17 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
           borderRadius: 12,
           overflow: "hidden",
           width: 300,
+=======
+    const { cT, servingSize, tags, ingredients } = props;
+    return (
+      <ScrollView
+        style={{
+          backgroundColor: theme.background,
+          width: "100%", // Changed from 300
+>>>>>>> Stashed changes
         }}
       >
+        {/* Image Section */}
         <View style={{ position: "relative" }}>
           <RNImage
             source={{ uri: imageUrl }}
@@ -104,53 +117,120 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
             />
           </TouchableOpacity>
         </View>
+
+        {/* Content Section */}
         <View
           style={{
             backgroundColor: theme.background,
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
-            marginTop: -20, // This creates the overlap effect
-            padding: 20,
+            marginTop: -20,
+            paddingHorizontal: 20,
+            paddingTop: 20,
+            paddingBottom: 10,
           }}
         >
+          {/* Title */}
+          <Text
+            style={{
+              fontSize: 24,
+              fontWeight: "700",
+              marginBottom: 12,
+              color: theme.text,
+            }}
+          >
+            {title}
+          </Text>
+
+          {/* Info Row */}
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
-              marginBottom: 16,
+              marginBottom: 20,
+              flexWrap: "wrap",
             }}
           >
             <IconWrapper icon={LucideClock} text={cT} />
             <IconWrapper icon={HandPlatter} text={servingSize} />
           </View>
+
+          {/* Tags Section */}
           <Text
             style={{
               color: theme.text,
               fontSize: 12,
               fontWeight: "bold",
               marginBottom: 10,
+              letterSpacing: 0.5,
             }}
           >
             TAGS
           </Text>
-          {/* tags */}
-          {tags.map((tag) => {
-            const Icon = IconLoader(tag);
-            return Icon ? (
-              <IconWrapper key={tag} icon={Icon} text={tag} />
-            ) : null;
-          })}
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              marginBottom: 20,
+            }}
+          >
+            {tags.map((tag) => {
+              const Icon = IconLoader(tag);
+              return Icon ? (
+                <View
+                  key={tag}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: theme.cardBackground,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 16,
+                    marginRight: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <Icon size={16} color={theme.icon} />
+                  <Text
+                    style={{ color: theme.text, fontSize: 12, marginLeft: 6 }}
+                  >
+                    {tag}
+                  </Text>
+                </View>
+              ) : null;
+            })}
+          </View>
+
           <Text
             style={{
               color: theme.text,
               fontSize: 12,
               fontWeight: "bold",
               marginBottom: 10,
-              marginTop: 10,
+              letterSpacing: 0.5,
             }}
           >
             INGREDIENTS
           </Text>
+<<<<<<< Updated upstream
+=======
+          <View style={{ marginBottom: 20 }}>
+            {ingredients.map((ingredient, index) => (
+              <View
+                key={index}
+                style={{
+                  flexDirection: "row",
+                  marginBottom: 8,
+                }}
+              >
+                <Text style={{ color: theme.icon, marginRight: 8 }}>•</Text>
+                <Text style={{ color: theme.text, flex: 1, lineHeight: 20 }}>
+                  {ingredient}
+                </Text>
+              </View>
+            ))}
+          </View>
+>>>>>>> Stashed changes
         </View>
       </ScrollView>
     );
@@ -209,7 +289,7 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
             {title}
           </Text>
           <Text style={{ fontSize: 12, color: theme.icon }}>
-            {ingredients.slice(0, 3).join(", ")}
+            {ingredients.slice(0, 3).join(",  ")}
           </Text>
         </View>
       </View>
