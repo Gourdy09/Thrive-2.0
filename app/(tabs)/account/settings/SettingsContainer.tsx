@@ -26,14 +26,18 @@ export default function SettingsContainer() {
   // Modals
   const [emailModalVisible, setEmailModalVisible] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
-  const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
+  const [deleteAccountModalVisible, setDeleteAccountModalVisible] =
+    useState(false);
   const [addDeviceModalVisible, setAddDeviceModalVisible] = useState(false);
-  const [renameDeviceModalVisible, setRenameDeviceModalVisible] = useState(false);
+  const [renameDeviceModalVisible, setRenameDeviceModalVisible] =
+    useState(false);
   const [selectedDevice, setSelectedDevice] = useState<CGMDevice | null>(null);
 
   // Bluetooth scanning
   const [isScanning, setIsScanning] = useState(false);
-  const [discoveredDevices, setDiscoveredDevices] = useState<BluetoothDevice[]>([]);
+  const [discoveredDevices, setDiscoveredDevices] = useState<BluetoothDevice[]>(
+    []
+  );
 
   useEffect(() => {
     fetchSettings();
@@ -108,7 +112,10 @@ export default function SettingsContainer() {
     setEmailModalVisible(false);
   };
 
-  const handleChangePassword = async (currentPassword: string, newPassword: string) => {
+  const handleChangePassword = async (
+    currentPassword: string,
+    newPassword: string
+  ) => {
     try {
       // TODO: Implement password change with Supabase Auth
       console.log("Password changed successfully");
@@ -151,7 +158,7 @@ export default function SettingsContainer() {
   const handleBirthdateChange = (birthdate: string) => {
     const newSettings = {
       ...settings,
-      you: { ...settings.you, birthdate }
+      you: { ...settings.you, birthdate },
     };
     setSettings(newSettings);
     saveSettings(newSettings);
@@ -160,7 +167,7 @@ export default function SettingsContainer() {
   const handleGenderChange = (gender: "Male" | "Female") => {
     const newSettings = {
       ...settings,
-      you: { ...settings.you, gender }
+      you: { ...settings.you, gender },
     };
     setSettings(newSettings);
     saveSettings(newSettings);
@@ -169,16 +176,18 @@ export default function SettingsContainer() {
   const handleRaceChange = (race: string) => {
     const newSettings = {
       ...settings,
-      you: { ...settings.you, race }
+      you: { ...settings.you, race },
     };
     setSettings(newSettings);
     saveSettings(newSettings);
   };
 
-  const handleDiabetesTypeChange = (diabetesType: "Type 1" | "Type 2" | "Prediabetes" | "None") => {
+  const handleDiabetesTypeChange = (
+    diabetesType: "Type 1" | "Type 2" | "Prediabetes" | "None"
+  ) => {
     const newSettings = {
       ...settings,
-      you: { ...settings.you, diabetesType }
+      you: { ...settings.you, diabetesType },
     };
     setSettings(newSettings);
     saveSettings(newSettings);
@@ -187,7 +196,7 @@ export default function SettingsContainer() {
   const handleBaselineGlucoseChange = (baselineGlucose: string) => {
     const newSettings = {
       ...settings,
-      you: { ...settings.you, baselineGlucose }
+      you: { ...settings.you, baselineGlucose },
     };
     setSettings(newSettings);
     saveSettings(newSettings);
@@ -196,7 +205,7 @@ export default function SettingsContainer() {
   const handleHeightChange = (height: string) => {
     const newSettings = {
       ...settings,
-      you: { ...settings.you, height }
+      you: { ...settings.you, height },
     };
     setSettings(newSettings);
     saveSettings(newSettings);
@@ -205,16 +214,18 @@ export default function SettingsContainer() {
   const handleWeightChange = (weight: string) => {
     const newSettings = {
       ...settings,
-      you: { ...settings.you, weight }
+      you: { ...settings.you, weight },
     };
     setSettings(newSettings);
     saveSettings(newSettings);
   };
 
-  const handleActivityLevelChange = (activityLevel: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active") => {
+  const handleActivityLevelChange = (
+    activityLevel: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active"
+  ) => {
     const newSettings = {
       ...settings,
-      you: { ...settings.you, activityLevel }
+      you: { ...settings.you, activityLevel },
     };
     setSettings(newSettings);
     saveSettings(newSettings);
@@ -223,7 +234,7 @@ export default function SettingsContainer() {
   const handleDietaryRestrictionChange = (dietaryRestrictions: string[]) => {
     const newSettings = {
       ...settings,
-      you: { ...settings.you, dietaryRestrictions }
+      you: { ...settings.you, dietaryRestrictions },
     };
     setSettings(newSettings);
     saveSettings(newSettings);
@@ -237,7 +248,7 @@ export default function SettingsContainer() {
     try {
       // TODO: Implement actual Bluetooth scanning
       // This would use react-native-ble-plx or similar library
-      
+
       // Mock scanning - simulate finding devices over time
       setTimeout(() => {
         setDiscoveredDevices([
@@ -246,14 +257,14 @@ export default function SettingsContainer() {
       }, 1000);
 
       setTimeout(() => {
-        setDiscoveredDevices(prev => [
+        setDiscoveredDevices((prev) => [
           ...prev,
           { id: "bt2", name: "Libre 3 Sensor", rssi: -60 },
         ]);
       }, 2000);
 
       setTimeout(() => {
-        setDiscoveredDevices(prev => [
+        setDiscoveredDevices((prev) => [
           ...prev,
           { id: "bt3", name: "Guardian Connect", rssi: -75 },
         ]);
@@ -272,7 +283,10 @@ export default function SettingsContainer() {
         id: Date.now().toString(),
         name: device.name,
         type: device.name,
-        serialNumber: `SN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+        serialNumber: `SN-${Math.random()
+          .toString(36)
+          .substr(2, 9)
+          .toUpperCase()}`,
         batteryLevel: 100,
         lastSync: new Date(),
         isConnected: true,
@@ -283,7 +297,7 @@ export default function SettingsContainer() {
         ...settings,
         connectedDevices: [...settings.connectedDevices, newDevice],
       };
-      
+
       setSettings(newSettings);
       await saveSettings(newSettings);
       setAddDeviceModalVisible(false);
@@ -294,7 +308,7 @@ export default function SettingsContainer() {
   };
 
   const handleSetActiveDevice = async (deviceId: string) => {
-    const newDevices = settings.connectedDevices.map(d => ({
+    const newDevices = settings.connectedDevices.map((d) => ({
       ...d,
       isActive: d.id === deviceId,
     }));
@@ -305,7 +319,7 @@ export default function SettingsContainer() {
   };
 
   const handleRenameDevice = async (deviceId: string, newName: string) => {
-    const newDevices = settings.connectedDevices.map(d =>
+    const newDevices = settings.connectedDevices.map((d) =>
       d.id === deviceId ? { ...d, name: newName } : d
     );
 
@@ -317,7 +331,9 @@ export default function SettingsContainer() {
   };
 
   const handleRemoveDevice = async (deviceId: string) => {
-    const newDevices = settings.connectedDevices.filter(d => d.id !== deviceId);
+    const newDevices = settings.connectedDevices.filter(
+      (d) => d.id !== deviceId
+    );
     const newSettings = { ...settings, connectedDevices: newDevices };
     setSettings(newSettings);
     await saveSettings(newSettings);
