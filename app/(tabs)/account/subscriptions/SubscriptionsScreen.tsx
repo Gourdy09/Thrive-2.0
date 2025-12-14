@@ -1,6 +1,6 @@
-import ConfirmChangeModal from "@/components/settings/subscriptions/ConfirmChangeModal";
-import PaymentDetailsOverview from "@/components/settings/subscriptions/PaymentDetailsOverview";
-import PaymentOption from "@/components/settings/subscriptions/SubscriptionOption";
+import ConfirmChangeModal from "@/components/account/subscriptions/ConfirmChangeModal";
+import PaymentDetailsOverview from "@/components/account/subscriptions/PaymentDetailsOverview";
+import PaymentOption from "@/components/account/subscriptions/SubscriptionOption";
 import { Colors } from "@/constants/Colors";
 import { Plan, SubscriptionScreenProps } from "@/types/subscriptions";
 import { useRouter } from "expo-router";
@@ -98,7 +98,7 @@ export default function SubscriptionsScreen ({
     }}>
       <ScrollView 
         contentContainerStyle={{ 
-          paddingHorizontal: 20,
+          paddingHorizontal: 14,
           paddingTop: 16,
           paddingBottom: 16,
         }}

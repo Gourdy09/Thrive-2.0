@@ -37,12 +37,12 @@ export default function useWebscrape(url: string) {
                 {
                   role: "user",
                   content: `Fetch ${url} and extract the recipe title, main image URL, ingredients, and instructions. Return ONLY valid JSON with no markdown:
-{
-  "title": "recipe name",
-  "imageUrl": "full URL to main recipe image",
-  "ingredients": ["ingredient 1", "ingredient 2", "ingredient 3"],
-  "instructions": ["step 1", "step 2", "step 3"]
-}`,
+                      {
+                        "title": "recipe name",
+                        "imageUrl": "full URL to main recipe image",
+                        "ingredients": ["ingredient 1", "ingredient 2", "ingredient 3"],
+                        "instructions": ["step 1", "step 2", "step 3"]
+                      }`,
                 },
               ],
               tools: [

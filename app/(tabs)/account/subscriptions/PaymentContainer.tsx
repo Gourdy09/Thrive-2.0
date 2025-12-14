@@ -1,4 +1,4 @@
-import { PaymentMethodData } from "@/components/settings/subscriptions/PaymentMethod";
+import { PaymentMethodData } from "@/components/account/subscriptions/PaymentMethod";
 import { useEffect, useState } from "react";
 import PaymentsScreen from "./PaymentsScreen";
 

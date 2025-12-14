@@ -4,9 +4,6 @@ import { Redirect } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 
 export default function Index() {
-<<<<<<< Updated upstream
-  return <Redirect href="/(tabs)/dashboard" />;
-=======
   const { user, loading, isFirstLaunch } = useAuth();
 
   AsyncStorage.clear();
@@ -31,5 +28,6 @@ export default function Index() {
 
   // Logged in = go to dashboard
   return <Redirect href="./(tabs)/dashboard" />;
->>>>>>> Stashed changes
 }
+}
+

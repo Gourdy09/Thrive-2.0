@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
+import * as WebBrowser from 'expo-web-browser';
 import {
   Bell,
   ChevronRight,
@@ -20,8 +21,6 @@ import {
   View,
 } from "react-native";
 
-<<<<<<< Updated upstream
-=======
 function openHelp() {
   // TODO: Open help on website
   WebBrowser.openBrowserAsync('https://example.com');
@@ -32,7 +31,11 @@ function openFeedback() {
   WebBrowser.openBrowserAsync('https://example.com');
 }
 
->>>>>>> Stashed changes
+const handleLogout = () => {
+  // TODO: do supabase integration, remove tokens, etc.
+  console.log("User logged out");
+};
+
 export default function AccountMain() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
@@ -60,19 +63,14 @@ export default function AccountMain() {
         router.push("/(tabs)/account/subscriptions");
         break;
       case "help":
-        router.push("/(tabs)/account/help");
+        openHelp();
         break;
       case "feedback":
-        router.push("/(tabs)/account/feedback");
+        openFeedback();
         break;
       default:
         console.warn("Unknown screen:", screen);
     }
-  };
-
-  const handleLogout = () => {
-    // TODO: do supabase integration, remove tokens, etc.
-    console.log("User logged out");
   };
 
   return (
@@ -85,7 +83,7 @@ export default function AccountMain() {
       }}
     >
       {/* Profile Header */}
-      <Header username="{UserName}" icon="CircleUser"/>
+      <Header username="{UserName}" icon="CircleUser" />
 
       {/* Settings */}
       <SectionItem

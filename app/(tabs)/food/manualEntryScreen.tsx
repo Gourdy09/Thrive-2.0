@@ -1,11 +1,10 @@
-// app/(tabs)/food/manualEntryScreen.tsx
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Plus } from "lucide-react-native";
+import { ArrowLeft, CheckCircle2 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -13,7 +12,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  useColorScheme
+  useColorScheme,
 } from "react-native";
 
 interface ManualEntryData {
@@ -36,86 +35,39 @@ export default function ManualEntryScreen() {
   const [completionTime, onChangeCT] = useState("");
   const [protein, onChangeProtein] = useState("");
   const [carbs, onChangeCarbs] = useState("");
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [showMealTypeModal, setShowMealTypeModal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
 
   const isFormValid = recipe.trim() !== "" && ingredients.trim() !== "";
 
-  const showSaveOptions = () => {
+  const handleSave = () => {
     if (!isFormValid) {
+      Alert.alert(
+        "Error",
+        "Please fill in at least the recipe name and ingredients"
+      );
       return;
     }
-    setShowSaveModal(true);
-  };
 
-  const handleAddOnce = () => {
-    setShowSaveModal(false);
-    setShowMealTypeModal(true);
-  };
+    const data: ManualEntryData = {
+      recipeName: recipe,
+      ingredients: ingredients
+        .split(",")
+        .map((i) => i.trim())
+        .filter((i) => i),
+      instructions: instructions.split("\n").filter((i) => i.trim()),
+      completionTime: parseInt(completionTime) || 0,
+      protein: parseFloat(protein) || 0,
+      carbs: parseFloat(carbs) || 0,
+    };
 
-  const addToFoodLog = async (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack') => {
-    try {
-      const logEntry = {
-        id: Date.now().toString(),
-        recipeName: recipe,
-        timestamp: new Date().toISOString(),
-        mealType,
-        nutrition: {
-          protein: parseFloat(protein) || 0,
-          carbs: parseFloat(carbs) || 0,
-          calories: (parseFloat(protein) || 0) * 4 + (parseFloat(carbs) || 0) * 4,
-        },
-      };
+    console.log("Saving:", data);
+    // TODO: Add save logic to Supabase
 
-      const stored = await AsyncStorage.getItem('foodLog');
-      const currentLog = stored ? JSON.parse(stored) : [];
-      const updatedLog = [logEntry, ...currentLog];
-      
-      await AsyncStorage.setItem('foodLog', JSON.stringify(updatedLog));
-      
-      setShowMealTypeModal(false);
-      setSuccessMessage("Added to food log!");
-      setShowSuccessModal(true);
-    } catch (error) {
-      console.error("Error adding to food log:", error);
-    }
-  };
-
-  const handleSaveRecipe = async () => {
-    try {
-      const newRecipe = {
-        id: `custom-${Date.now()}`,
-        title: recipe,
-        imageUrl: "",
-        ingredients: ingredients
-          .split(",")
-          .map((i) => i.trim())
-          .filter((i) => i),
-        instructions: instructions.split("\n").filter((i) => i.trim()),
-        cT: completionTime ? `${completionTime} min` : "N/A",
-        protein: parseFloat(protein) || 0,
-        carbs: parseFloat(carbs) || 0,
-        tags: ["Custom"],
-        servingSize: "1 serving",
-        isBookmarked: false,
-        isCustom: true,
-      };
-
-      const customRecipesKey = 'customRecipes';
-      const customRecipesStored = await AsyncStorage.getItem(customRecipesKey);
-      const currentCustomRecipes = customRecipesStored ? JSON.parse(customRecipesStored) : [];
-      
-      const updatedCustomRecipes = [...currentCustomRecipes, newRecipe];
-      await AsyncStorage.setItem(customRecipesKey, JSON.stringify(updatedCustomRecipes));
-
-      setShowSaveModal(false);
-      setSuccessMessage("Recipe saved to your collection!");
-      setShowSuccessModal(true);
-    } catch (error) {
-      console.error("Error saving recipe:", error);
-    }
+    Alert.alert("Success", "Recipe saved successfully!", [
+      {
+        text: "OK",
+        onPress: () => router.back(),
+      },
+    ]);
   };
 
   return (
@@ -381,7 +333,7 @@ export default function ManualEntryScreen() {
             </View>
           </View>
 
-          {/* Action Button */}
+          {/* Save Button */}
           <TouchableOpacity
             style={{
               backgroundColor: isFormValid ? theme.tint : theme.border,
@@ -393,10 +345,10 @@ export default function ManualEntryScreen() {
               gap: 8,
               marginTop: 12,
             }}
-            onPress={showSaveOptions}
+            onPress={handleSave}
             disabled={!isFormValid}
           >
-            <Plus
+            <CheckCircle2
               size={20}
               color={isFormValid ? theme.background : theme.icon}
             />
@@ -407,269 +359,11 @@ export default function ManualEntryScreen() {
                 fontWeight: "700",
               }}
             >
-              Add Recipe
+              Save Recipe
             </Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
-
-      {/* Save Options Modal */}
-      {showSaveModal && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: theme.background,
-              borderRadius: 16,
-              padding: 24,
-              width: "85%",
-              maxWidth: 400,
-              borderWidth: 2,
-              borderColor: theme.border,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: "700",
-                color: theme.text,
-                marginBottom: 12,
-              }}
-            >
-              Add Recipe
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                color: theme.icon,
-                marginBottom: 24,
-                lineHeight: 22,
-              }}
-            >
-              Would you like to save this recipe or add it once to your food log?
-            </Text>
-            <View style={{ gap: 12 }}>
-              <TouchableOpacity
-                onPress={handleAddOnce}
-                style={{
-                  padding: 14,
-                  borderRadius: 12,
-                  borderWidth: 2,
-                  borderColor: theme.tint,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: theme.tint, fontWeight: "700", fontSize: 16 }}>
-                  Add Once to Log
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleSaveRecipe}
-                style={{
-                  padding: 14,
-                  borderRadius: 12,
-                  backgroundColor: theme.tint,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: theme.background, fontWeight: "700", fontSize: 16 }}>
-                  Save Recipe
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setShowSaveModal(false)}
-                style={{
-                  padding: 14,
-                  borderRadius: 12,
-                  borderWidth: 2,
-                  borderColor: theme.border,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: theme.text, fontWeight: "600", fontSize: 16 }}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Meal Type Modal */}
-      {showMealTypeModal && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: theme.background,
-              borderRadius: 16,
-              padding: 24,
-              width: "85%",
-              maxWidth: 400,
-              borderWidth: 2,
-              borderColor: theme.border,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: "700",
-                color: theme.text,
-                marginBottom: 12,
-              }}
-            >
-              Select Meal Type
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                color: theme.icon,
-                marginBottom: 24,
-                lineHeight: 22,
-              }}
-            >
-              When did you eat this?
-            </Text>
-            <View style={{ gap: 12 }}>
-              {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((mealType) => (
-                <TouchableOpacity
-                  key={mealType}
-                  onPress={() => addToFoodLog(mealType)}
-                  style={{
-                    padding: 14,
-                    borderRadius: 12,
-                    backgroundColor: theme.cardBackground,
-                    borderWidth: 2,
-                    borderColor: theme.border,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text style={{ color: theme.text, fontWeight: "600", fontSize: 16 }}>
-                    {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-              <TouchableOpacity
-                onPress={() => setShowMealTypeModal(false)}
-                style={{
-                  padding: 14,
-                  borderRadius: 12,
-                  borderWidth: 2,
-                  borderColor: theme.border,
-                  alignItems: "center",
-                  marginTop: 8,
-                }}
-              >
-                <Text style={{ color: theme.text, fontWeight: "600", fontSize: 16 }}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: theme.background,
-              borderRadius: 16,
-              padding: 24,
-              width: "85%",
-              maxWidth: 400,
-              borderWidth: 2,
-              borderColor: theme.border,
-              alignItems: "center",
-            }}
-          >
-            <View
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 32,
-                backgroundColor: theme.tint + "20",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 16,
-              }}
-            >
-              <Text style={{ fontSize: 32 }}>✓</Text>
-            </View>
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: "700",
-                color: theme.text,
-                marginBottom: 12,
-                textAlign: "center",
-              }}
-            >
-              Success!
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                color: theme.icon,
-                marginBottom: 24,
-                textAlign: "center",
-                lineHeight: 22,
-              }}
-            >
-              {successMessage}
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                setShowSuccessModal(false);
-                router.back();
-              }}
-              style={{
-                padding: 14,
-                borderRadius: 12,
-                backgroundColor: theme.tint,
-                alignItems: "center",
-                width: "100%",
-              }}
-            >
-              <Text style={{ color: theme.background, fontWeight: "700", fontSize: 16 }}>
-                Done
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
     </KeyboardAvoidingView>
   );
 }

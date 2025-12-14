@@ -1,7 +1,6 @@
-// components/food/RecipeCard.tsx
 import IconLoader from "@/app/(tabs)/food/IconLoader";
 import { Colors } from "@/constants/Colors";
-import { Bookmark, HandPlatter, LucideClock, Pencil, Plus, Trash2 } from "lucide-react-native";
+import { Bookmark, HandPlatter, LucideClock, Plus } from "lucide-react-native";
 import React from "react";
 import {
   Alert,
@@ -25,10 +24,6 @@ interface RecipeData {
   protein?: number;
   carbs?: number;
   tags?: string[];
-  isCustom?: boolean;
-  onAddToLog?: (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack') => void;
-  onDelete?: () => void;
-  onEdit?: () => void;
 }
 
 interface PopUpInfo extends RecipeData {
@@ -70,7 +65,7 @@ export const IconWrapper: React.FC<IconWrapperProps> = ({
 };
 
 const RecipeCard: React.FC<RecipeCardProps> = (props) => {
-  const { id, title, imageUrl, ingredients, isBookmarked = false, onToggleBookmark, isCustom = false, onAddToLog, onDelete, onEdit } = props;
+  const { id, title, imageUrl, ingredients, isBookmarked = false, onToggleBookmark } = props;
   const isInPopUp = "isInPopUp" in props && props.isInPopUp;
 
   const colorScheme = useColorScheme() ?? "dark";
@@ -98,7 +93,6 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
 
   const addToFoodLog = async (mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack') => {
     try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       const logEntry = {
         id: Date.now().toString(),
         recipeId: id,
@@ -113,11 +107,18 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
         imageUrl,
       };
 
+      // Save to AsyncStorage - ADD to existing log, don't replace
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       const stored = await AsyncStorage.getItem('foodLog');
       const currentLog = stored ? JSON.parse(stored) : [];
+      
+      // Add new entry to the BEGINNING of the array (most recent first)
       const updatedLog = [logEntry, ...currentLog];
       
       await AsyncStorage.setItem('foodLog', JSON.stringify(updatedLog));
+      
+      console.log("Added to food log:", logEntry);
+      console.log("Total entries:", updatedLog.length);
       
       Alert.alert(
         "Added to Food Log",
@@ -131,12 +132,17 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
   };
 
   const showMealTypeOptions = () => {
-    if (onAddToLog) {
-      // For custom recipes with onAddToLog prop, use that
-      onAddToLog('breakfast'); // Will be replaced by modal
-    } else {
-      addToFoodLog('breakfast'); // Will be replaced by modal
-    }
+    Alert.alert(
+      "Add to Food Log",
+      "Select meal type",
+      [
+        { text: "Breakfast", onPress: () => addToFoodLog('breakfast') },
+        { text: "Lunch", onPress: () => addToFoodLog('lunch') },
+        { text: "Dinner", onPress: () => addToFoodLog('dinner') },
+        { text: "Snack", onPress: () => addToFoodLog('snack') },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
   };
 
   if (isInPopUp) {
@@ -153,46 +159,42 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
           borderRadius: 12,
         }}
       >
-        {imageUrl && (
-          <View style={{ position: "relative" }}>
-            <RNImage
-              source={{ uri: imageUrl }}
-              style={{ width: "100%", height: 250 }}
-              resizeMode="cover"
+        <View style={{ position: "relative" }}>
+          <RNImage
+            source={{ uri: imageUrl }}
+            style={{ width: "100%", height: 250 }}
+            resizeMode="cover"
+          />
+          <TouchableOpacity
+            onPress={handleBookmarkToggle}
+            style={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              backgroundColor: "white",
+              padding: 8,
+              borderRadius: 20,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.2,
+              shadowRadius: 2,
+              elevation: 2,
+            }}
+          >
+            <Bookmark
+              size={20}
+              color={isBookmarked ? "#FF6B6B" : "#666"}
+              fill={isBookmarked ? "#FF6B6B" : "none"}
             />
-            {!isCustom && (
-              <TouchableOpacity
-                onPress={handleBookmarkToggle}
-                style={{
-                  position: "absolute",
-                  top: 16,
-                  right: 16,
-                  backgroundColor: "white",
-                  padding: 8,
-                  borderRadius: 20,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 2,
-                  elevation: 2,
-                }}
-              >
-                <Bookmark
-                  size={20}
-                  color={isBookmarked ? "#FF6B6B" : "#666"}
-                  fill={isBookmarked ? "#FF6B6B" : "none"}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+          </TouchableOpacity>
+        </View>
         
         <View
           style={{
             backgroundColor: theme.background,
-            borderTopLeftRadius: imageUrl ? 20 : 0,
-            borderTopRightRadius: imageUrl ? 20 : 0,
-            marginTop: imageUrl ? -20 : 0,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            marginTop: -20,
             padding: 20,
           }}
         >
@@ -306,7 +308,6 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
     }
     if (tags.includes("Gluten-free")) chips.push({ label: "Gluten-free", color: "#FFA07A" });
     if (tags.includes("Quick")) chips.push({ label: "Quick", color: "#F7DC6F" });
-    if (isCustom) chips.push({ label: "Custom", color: theme.tint });
     
     return (
       <View
@@ -317,68 +318,39 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
           width: 280,
         }}
       >
-        {/* Image or Placeholder */}
-        {imageUrl ? (
-          <>
-            <TouchableOpacity
-              onPress={() => props.onPress?.(id)}
-              activeOpacity={0.7}
-            >
-              <RNImage
-                source={{ uri: imageUrl }}
-                style={{ width: "100%", height: 160, borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-            
-            {!isCustom && (
-              <TouchableOpacity
-                onPress={handleBookmarkToggle}
-                style={{
-                  position: "absolute",
-                  top: 12,
-                  right: 12,
-                  backgroundColor: "white",
-                  padding: 8,
-                  borderRadius: 20,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 2,
-                  elevation: 2,
-                }}
-              >
-                <Bookmark
-                  size={20}
-                  color={isBookmarked ? "#FF6B6B" : "#666"}
-                  fill={isBookmarked ? "#FF6B6B" : "none"}
-                />
-              </TouchableOpacity>
-            )}
-          </>
-        ) : (
-          <View
-            style={{
-              width: "100%",
-              height: 160,
-              backgroundColor: colorScheme === "dark" ? "#2a2d32" : "#e8e9eb",
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              style={{
-                color: theme.icon,
-                fontSize: 48,
-                fontWeight: "700",
-              }}
-            >
-              {title.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-        )}
+        <TouchableOpacity
+          onPress={() => props.onPress?.(id)}
+          activeOpacity={0.7}
+        >
+          <RNImage
+            source={{ uri: imageUrl }}
+            style={{ width: "100%", height: 160, borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          onPress={handleBookmarkToggle}
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            backgroundColor: "white",
+            padding: 8,
+            borderRadius: 20,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.2,
+            shadowRadius: 2,
+            elevation: 2,
+          }}
+        >
+          <Bookmark
+            size={20}
+            color={isBookmarked ? "#FF6B6B" : "#666"}
+            fill={isBookmarked ? "#FF6B6B" : "none"}
+          />
+        </TouchableOpacity>
         
         <View style={{ padding: 12 }}>
           <Text
@@ -426,117 +398,30 @@ const RecipeCard: React.FC<RecipeCardProps> = (props) => {
             </View>
           )}
 
-          {/* Action Buttons */}
-          {isCustom ? (
-            <View style={{ gap: 8 }}>
-              <TouchableOpacity
-                onPress={showMealTypeOptions}
-                style={{
-                  backgroundColor: theme.tint,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  borderRadius: 8,
-                  gap: 6,
-                }}
-              >
-                <Plus size={16} color={theme.background} />
-                <Text
-                  style={{
-                    color: theme.background,
-                    fontSize: 14,
-                    fontWeight: "600",
-                  }}
-                >
-                  Add to Log
-                </Text>
-              </TouchableOpacity>
-
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                <TouchableOpacity
-                  onPress={onEdit}
-                  style={{
-                    flex: 1,
-                    backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                    borderRadius: 8,
-                    gap: 6,
-                    borderWidth: 2,
-                    borderColor: theme.border,
-                  }}
-                >
-                  <Pencil size={16} color={theme.text} />
-                  <Text
-                    style={{
-                      color: theme.text,
-                      fontSize: 14,
-                      fontWeight: "600",
-                    }}
-                  >
-                    Edit
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={onDelete}
-                  style={{
-                    flex: 1,
-                    backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                    borderRadius: 8,
-                    gap: 6,
-                    borderWidth: 2,
-                    borderColor: "#FF6B6B",
-                  }}
-                >
-                  <Trash2 size={16} color="#FF6B6B" />
-                  <Text
-                    style={{
-                      color: "#FF6B6B",
-                      fontSize: 14,
-                      fontWeight: "600",
-                    }}
-                  >
-                    Delete
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <TouchableOpacity
-              onPress={() => props.onPress?.(id)}
+          {/* View Details Button - Opens Modal */}
+          <TouchableOpacity
+            onPress={() => props.onPress?.(id)}
+            style={{
+              backgroundColor: theme.tint,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              borderRadius: 8,
+              gap: 6,
+            }}
+          >
+            <Text
               style={{
-                backgroundColor: theme.tint,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                paddingVertical: 10,
-                paddingHorizontal: 12,
-                borderRadius: 8,
-                gap: 6,
+                color: theme.background,
+                fontSize: 14,
+                fontWeight: "600",
               }}
             >
-              <Text
-                style={{
-                  color: theme.background,
-                  fontSize: 14,
-                  fontWeight: "600",
-                }}
-              >
-                View Details
-              </Text>
-            </TouchableOpacity>
-          )}
+              View Details
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     );

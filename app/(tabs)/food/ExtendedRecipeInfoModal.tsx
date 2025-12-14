@@ -1,29 +1,15 @@
-// app/(tabs)/food/extendedRecipeInfoModal.tsx
+import useMockWebscrape from "@/components/food/mockWebscrape";
 import RecipeCard from "@/components/food/RecipeCard";
 import { Colors } from "@/constants/Colors";
 import React from "react";
 import {
-  ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
   Text,
   useColorScheme,
-  View,
+  View
 } from "react-native";
-
-interface RecipeData {
-  id: string;
-  title: string;
-  imageUrl: string;
-  ingredients: string[];
-  instructions: string[];
-  cT: string;
-  protein: number;
-  carbs: number;
-  tags: string[];
-  servingSize: string;
-}
 
 interface PopUpProps {
   visible: boolean;
@@ -33,7 +19,6 @@ interface PopUpProps {
   recipeId: string;
   isBookmarked: boolean;
   onToggleBookmark: (id: string) => void;
-  allRecipes: RecipeData[];
 }
 
 const Popup: React.FC<PopUpProps> = ({
@@ -44,14 +29,14 @@ const Popup: React.FC<PopUpProps> = ({
   recipeId,
   isBookmarked,
   onToggleBookmark,
-  allRecipes,
 }) => {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
+  const { recipeData, loading, error } = useMockWebscrape();
   
   if (!visible) return null;
   
-  const selectedRecipe = allRecipes.find((recipe) => recipe.id === recipeId);
+  const selectedRecipe = recipeData.find((recipe) => recipe.id === recipeId);
   
   return (
     <Modal
@@ -100,7 +85,12 @@ const Popup: React.FC<PopUpProps> = ({
                   {title}
                 </Text>
               )}
-              {!selectedRecipe ? (
+              {loading && (
+                <View>
+                  <Text style={{ color: theme.text }}>Loading...</Text>
+                </View>
+              )}
+              {error && (
                 <View
                   style={{
                     width: 280,
@@ -110,10 +100,10 @@ const Popup: React.FC<PopUpProps> = ({
                     height: 200,
                   }}
                 >
-                  <ActivityIndicator size="large" color={theme.tint} />
-                  <Text style={{ color: theme.text, marginTop: 16 }}>Loading recipe...</Text>
+                  <Text style={{ color: theme.text }}>Error: {error}</Text>
                 </View>
-              ) : (
+              )}
+              {!loading && !error && selectedRecipe && (
                 <RecipeCard
                   {...selectedRecipe}
                   key={selectedRecipe.id}

@@ -1,5 +1,5 @@
-import AddPaymentModal from "@/components/settings/subscriptions/AddPaymentModal";
-import PaymentMethod from "@/components/settings/subscriptions/PaymentMethod";
+import AddPaymentModal from "@/components/account/subscriptions/AddPaymentModal";
+import PaymentMethod from "@/components/account/subscriptions/PaymentMethod";
 import { Colors } from "@/constants/Colors";
 import { PaymentScreenProps } from "@/types/subscriptions";
 import { useRouter } from 'expo-router';
@@ -27,7 +27,7 @@ export default function PaymentsScreen({
         }}>
             <ScrollView
                 contentContainerStyle={{
-                    paddingHorizontal: 20,
+                    paddingHorizontal: 14,
                     paddingTop: 16,
                     paddingBottom: 16,
                 }}
