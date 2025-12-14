@@ -1,8 +1,13 @@
+<<<<<<< Updated upstream
 import { Colors } from "@/constants/Colors";
+=======
+import { AuthProvider } from "@/contexts/AuthContext";
+>>>>>>> Stashed changes
 import { Stack } from "expo-router";
 import { useColorScheme, View } from "react-native";
 
 export default function RootLayout() {
+<<<<<<< Updated upstream
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
@@ -26,5 +31,11 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
       </Stack>
     </View>
+=======
+  return (
+    <AuthProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </AuthProvider>
+>>>>>>> Stashed changes
   );
 }
