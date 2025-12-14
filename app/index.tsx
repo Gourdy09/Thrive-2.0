@@ -29,3 +29,4 @@ export default function Index() {
   // Logged in = go to dashboard
   return <Redirect href="./(tabs)/dashboard" />;
 }
+
