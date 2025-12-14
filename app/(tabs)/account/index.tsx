@@ -1,8 +1,6 @@
-// app/(tabs)/account/index.tsx
-"use client";
-
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
 import * as WebBrowser from 'expo-web-browser';
 import {
@@ -15,6 +13,7 @@ import {
   Settings,
 } from "lucide-react-native";
 import {
+  Alert,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -41,6 +40,16 @@ export default function AccountMain() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
   const router = useRouter();
+  const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Error logging out:", error);
+      Alert.alert("Error", "Failed to log out. Please try again.");
+    }
+  };
 
   const handleNavigation = (screen: string) => {
     switch (screen) {
