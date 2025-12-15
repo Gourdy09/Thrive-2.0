@@ -2,9 +2,15 @@ import useMockWebscrape from "@/components/food/mockWebscrape";
 import RecipeCard from "@/components/food/RecipeCard";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { BookOpen, Camera, ChevronRight, TableOfContents } from "lucide-react-native";
+import {
+  BookOpen,
+  Camera,
+  ChevronRight,
+  TableOfContents,
+} from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -18,7 +24,6 @@ import {
   View,
 } from "react-native";
 import Popup from "./extendedRecipeInfoModal";
-
 interface RecipeData {
   id: string;
   title: string;
@@ -52,7 +57,6 @@ const CustomButton: React.FC<CustomButtonProps> = ({
 }) => {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
-
   return (
     <Pressable
       onPress={onPress}
@@ -75,7 +79,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   );
 };
 
-export default function FoodScreen({ username = "User" }: FoodScreenProps) {
+export default function FoodScreen({ username = "U" }: FoodScreenProps) {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
@@ -86,17 +90,19 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
   const [foodLogCount, setFoodLogCount] = useState(0);
   const [showSavedRecipes, setShowSavedRecipes] = useState(false);
   const { recipeData, loading, error } = useMockWebscrape();
-  
+
   const suggestionsScrollRef = useRef<ScrollView>(null);
   const savedScrollRef = useRef<ScrollView>(null);
   const screenWidth = Dimensions.get("window").width;
   const cardWidth = 280 + 16; // card width + margin
 
+  const { user } = useAuth();
+  const username1 = user?.email?.split("@")[0] || "User";
   // Load bookmarked recipes and food log count
   useEffect(() => {
     loadBookmarkedRecipes();
     loadFoodLogCount();
-    
+
     // Listener for food log updates
     const interval = setInterval(loadFoodLogCount, 3000);
     return () => clearInterval(interval);
@@ -104,7 +110,7 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
 
   const loadBookmarkedRecipes = async () => {
     try {
-      const stored = await AsyncStorage.getItem('bookmarkedRecipes');
+      const stored = await AsyncStorage.getItem("bookmarkedRecipes");
       if (stored) setBookmarkedRecipes(JSON.parse(stored));
     } catch (error) {
       console.error("Error loading bookmarks:", error);
@@ -113,7 +119,7 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
 
   const loadFoodLogCount = async () => {
     try {
-      const stored = await AsyncStorage.getItem('foodLog');
+      const stored = await AsyncStorage.getItem("foodLog");
       if (stored) {
         const parsed = JSON.parse(stored);
         const today = new Date().toDateString();
@@ -130,7 +136,10 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
 
   const saveBookmarkedRecipes = async (bookmarks: string[]) => {
     try {
-      await AsyncStorage.setItem('bookmarkedRecipes', JSON.stringify(bookmarks));
+      await AsyncStorage.setItem(
+        "bookmarkedRecipes",
+        JSON.stringify(bookmarks)
+      );
       console.log("Bookmarks saved:", bookmarks);
     } catch (error) {
       console.error("Error saving bookmarks:", error);
@@ -189,7 +198,7 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
         paddingTop: 60,
       }}
     >
-      <Header username={username} icon="Hamburger" />
+      <Header username={username1} icon="Hamburger" />
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={{ padding: 16 }}>
           <View
@@ -220,7 +229,9 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
             showsHorizontalScrollIndicator={false}
             snapToInterval={cardWidth}
             decelerationRate="fast"
-            onMomentumScrollEnd={(e) => handleScrollEnd(e, suggestionsScrollRef)}
+            onMomentumScrollEnd={(e) =>
+              handleScrollEnd(e, suggestionsScrollRef)
+            }
             contentContainerStyle={{ paddingRight: 16 }}
           >
             {loading && (
@@ -276,9 +287,15 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
                   paddingVertical: 8,
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                >
                   <Text
-                    style={{ fontSize: 20, fontWeight: "600", color: theme.text }}
+                    style={{
+                      fontSize: 20,
+                      fontWeight: "600",
+                      color: theme.text,
+                    }}
                   >
                     Saved Recipes
                   </Text>
@@ -301,11 +318,13 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
                     </Text>
                   </View>
                 </View>
-                <ChevronRight 
-                  size={20} 
+                <ChevronRight
+                  size={20}
                   color={theme.icon}
                   style={{
-                    transform: [{ rotate: showSavedRecipes ? '90deg' : '0deg' }]
+                    transform: [
+                      { rotate: showSavedRecipes ? "90deg" : "0deg" },
+                    ],
                   }}
                 />
               </TouchableOpacity>
@@ -317,7 +336,9 @@ export default function FoodScreen({ username = "User" }: FoodScreenProps) {
                   showsHorizontalScrollIndicator={false}
                   snapToInterval={cardWidth}
                   decelerationRate="fast"
-                  onMomentumScrollEnd={(e) => handleScrollEnd(e, savedScrollRef)}
+                  onMomentumScrollEnd={(e) =>
+                    handleScrollEnd(e, savedScrollRef)
+                  }
                   contentContainerStyle={{ paddingRight: 16 }}
                 >
                   {savedRecipes.map((recipe) => (

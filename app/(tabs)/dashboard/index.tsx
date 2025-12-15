@@ -2,20 +2,29 @@ import DashboardReport from "@/components/dashboard/DashboardReport";
 import GlucoseChart from "@/components/dashboard/GlucoseChart";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { default as React, useEffect, useState } from "react";
-import { Dimensions, ScrollView, useColorScheme, View } from "react-native";
-
+import {
+  Alert,
+  Dimensions,
+  ScrollView,
+  useColorScheme,
+  View,
+} from "react-native";
 export default function Dashboard() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
-  const username = "{UserName}";
   const bloodGlucoseLevel = 0;
   const units = "mg/dL";
   const deltaSugar = -0;
   const expectedChange = 0;
+  const { user } = useAuth();
+  const router = useRouter();
+  const [profileComplete, setProfileComplete] = useState(true);
 
   interface GlucoseReading {
     value: number;
@@ -60,8 +69,29 @@ export default function Dashboard() {
         console.log(e);
       }
     };
+
+    const checkProfile = async () => {
+      if (user?.id) {
+        const { checkProfileComplete } = useAuth();
+        const isComplete = await checkProfileComplete;
+
+        if (!isComplete) {
+          Alert.alert(
+            "Completer your profile man",
+            "For the love of god finish settings. ",
+            [
+              {
+                text: "Go to settings and finish it dumb dumb",
+                onPress: () => router.push("/(tabs)/account/settings"),
+              },
+            ]
+          );
+        }
+      }
+    };
     loadData();
-  }, []);
+    checkProfile();
+  }, [user]);
 
   const chartWidth = Math.max(Dimensions.get("window").width * 4, 800);
   const centerScroll = () => {
@@ -129,7 +159,7 @@ export default function Dashboard() {
       },
     ],
   };
-
+  const username = (user?.email as string)?.split("@")[0] || "User";
   return (
     <View
       style={{

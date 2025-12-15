@@ -59,11 +59,9 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       await signUp(email.trim().toLowerCase(), password);
-      Alert.alert(
-        "Success",
-        "Account created successfully!",
-        [{ text: "OK" }]
-      );
+      Alert.alert("Success", "Account created successfully!", [
+        { text: "OK", onPress: () => router.replace("../(tabs)/dashboard") },
+      ]); // turn back on email confirmation later on
       // User will be auto-logged in
     } catch (error: any) {
       console.error("Signup error:", error);

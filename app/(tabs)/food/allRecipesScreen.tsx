@@ -2,6 +2,7 @@ import useMockWebscrape from "@/components/food/mockWebscrape";
 import RecipeCard from "@/components/food/RecipeCard";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import React from "react";
@@ -12,7 +13,6 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-
 interface RecipeData {
   id: string;
   title: string;
@@ -26,6 +26,8 @@ export default function allRecipesScreen() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
   const { recipeData, loading, error } = useMockWebscrape();
+  const { user } = useAuth();
+  const username = user?.email?.split("@")[0] || "User";
   return (
     <View
       style={{
@@ -35,7 +37,7 @@ export default function allRecipesScreen() {
         paddingTop: 60,
       }}
     >
-      <Header username="{Username}" icon="Hamburger" />
+      <Header username={username} icon="Hamburger" />
       <View style={{ padding: 16 }}>
         <View
           style={{

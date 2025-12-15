@@ -1,4 +1,3 @@
-
 ```
 Thrive-2.0
 ├─ app
@@ -14,7 +13,7 @@ Thrive-2.0
 │  │  │  │  ├─ SettingsContainer.tsx
 │  │  │  │  └─ SettingsScreen.tsx
 │  │  │  ├─ subscriptions
-│  │  │  │  ├─ index.tsx
+│  │  │  │  ├─x index.tsx
 │  │  │  │  ├─ PaymentContainer.tsx
 │  │  │  │  ├─ PaymentsScreen.tsx
 │  │  │  │  ├─ SubscriptionsContainer.tsx

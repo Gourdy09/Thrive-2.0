@@ -36,14 +36,10 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      //TEMP CODE UNTILL SUPABASE WORKS THIS IS A TEST ACCOUNT
-      if(email === "test@test.com" && password === "12345678"){
-        router.push('../(tabs)/dashboard')
-      }
-
-
       await signIn(email.trim().toLowerCase(), password);
-      // Navigation will be handled by the auth state change
+      Alert.alert("Success", "You in Gang!", [
+        { text: "OK", onPress: () => router.push("../(tabs)/dashboard") },
+      ]);
     } catch (error: any) {
       console.error("Login error:", error);
       Alert.alert("Login Failed", error.message || "Invalid credentials");
@@ -187,7 +183,9 @@ export default function LoginScreen() {
             style={{ alignSelf: "flex-end", marginBottom: 24 }}
             onPress={handleForgotPassword}
           >
-            <Text style={{ color: theme.tint, fontSize: 14, fontWeight: "600" }}>
+            <Text
+              style={{ color: theme.tint, fontSize: 14, fontWeight: "600" }}
+            >
               Forgot Password?
             </Text>
           </TouchableOpacity>

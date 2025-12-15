@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
-import * as WebBrowser from 'expo-web-browser';
+import * as WebBrowser from "expo-web-browser";
 import {
   Bell,
   ChevronRight,
@@ -23,24 +23,19 @@ import {
 
 function openHelp() {
   // TODO: Open help on website
-  WebBrowser.openBrowserAsync('https://example.com');
+  WebBrowser.openBrowserAsync("https://example.com");
 }
 
 function openFeedback() {
   // TODO: Open feedback on website
-  WebBrowser.openBrowserAsync('https://example.com');
+  WebBrowser.openBrowserAsync("https://example.com");
 }
-
-const handleLogout = () => {
-  // TODO: do supabase integration, remove tokens, etc.
-  console.log("User logged out");
-};
 
 export default function AccountMain() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -72,7 +67,7 @@ export default function AccountMain() {
         console.warn("Unknown screen:", screen);
     }
   };
-
+  const username = user?.email?.split("@")[0] || "User";
   return (
     <ScrollView
       style={{
@@ -83,7 +78,7 @@ export default function AccountMain() {
       }}
     >
       {/* Profile Header */}
-      <Header username="{UserName}" icon="CircleUser" />
+      <Header username={username} icon="CircleUser" />
 
       {/* Settings */}
       <SectionItem

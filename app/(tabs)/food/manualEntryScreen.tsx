@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
 import { ArrowLeft, CheckCircle2 } from "lucide-react-native";
 import React, { useState } from "react";
@@ -14,7 +15,6 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-
 interface ManualEntryData {
   recipeName: string;
   ingredients: string[];
@@ -38,6 +38,8 @@ export default function ManualEntryScreen() {
 
   const isFormValid = recipe.trim() !== "" && ingredients.trim() !== "";
 
+  const { user } = useAuth();
+  const username = user?.email?.split("@")[0] || "User";
   const handleSave = () => {
     if (!isFormValid) {
       Alert.alert(
@@ -84,7 +86,7 @@ export default function ManualEntryScreen() {
           paddingTop: 60,
         }}
       >
-        <Header username="{username}" icon="Hamburger" />
+        <Header username={username} icon="Hamburger" />
 
         {/* Back Button & Title */}
         <View

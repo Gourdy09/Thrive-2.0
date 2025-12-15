@@ -1,20 +1,20 @@
 import { Colors } from "@/constants/Colors";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Mail } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  useColorScheme,
+  View,
 } from "react-native";
 
 export default function ResetPasswordScreen() {
@@ -31,44 +31,26 @@ export default function ResetPasswordScreen() {
   };
 
   const handleResetPassword = async () => {
-    if (!email) {
-      Alert.alert("Error", "Please enter your email address");
-      return;
-    }
-
-    if (!validateEmail(email)) {
+    if (!email || !validateEmail(email)) {
       Alert.alert("Error", "Please enter a valid email address");
       return;
     }
 
     setLoading(true);
     try {
-      // Mock password reset - check if user exists
-      const storedUsers = await AsyncStorage.getItem("mock_users");
-      const users = storedUsers ? JSON.parse(storedUsers) : {};
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: "your-app://reset-password",
+      });
 
-      if (!users[email.trim().toLowerCase()]) {
-        Alert.alert("Error", "No account found with this email address");
-        setLoading(false);
-        return;
-      }
-
-      // Simulate sending reset email
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (error) throw error;
 
       Alert.alert(
         "Check Your Email",
-        "If an account exists with this email, you will receive password reset instructions.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.back(),
-          },
-        ]
+        "Password reset instructions have been sent to your email.",
+        [{ text: "OK", onPress: () => router.back() }]
       );
     } catch (error: any) {
-      console.error("Reset password error:", error);
-      Alert.alert("Error", "Failed to send reset email. Please try again.");
+      Alert.alert("Error", error.message || "Failed to send reset email");
     } finally {
       setLoading(false);
     }
@@ -229,35 +211,3 @@ export default function ResetPasswordScreen() {
     </TouchableWithoutFeedback>
   );
 }
-
-/* 
- * When you're ready to implement Supabase password reset:
- * 
- * import { supabase } from "@/lib/supabase";
- * 
- * const handleResetPassword = async () => {
- *   if (!email || !validateEmail(email)) {
- *     Alert.alert("Error", "Please enter a valid email address");
- *     return;
- *   }
- * 
- *   setLoading(true);
- *   try {
- *     const { error } = await supabase.auth.resetPasswordForEmail(email, {
- *       redirectTo: 'your-app://reset-password', // Your deep link
- *     });
- * 
- *     if (error) throw error;
- * 
- *     Alert.alert(
- *       "Check Your Email",
- *       "Password reset instructions have been sent to your email.",
- *       [{ text: "OK", onPress: () => router.back() }]
- *     );
- *   } catch (error: any) {
- *     Alert.alert("Error", error.message || "Failed to send reset email");
- *   } finally {
- *     setLoading(false);
- *   }
- * };
- */

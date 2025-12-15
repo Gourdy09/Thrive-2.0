@@ -1,22 +1,22 @@
 // app/(tabs)/food/editRecipeScreen.tsx
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Save } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    useColorScheme,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useColorScheme,
 } from "react-native";
-
 interface RecipeData {
   id: string;
   title: string;
@@ -45,6 +45,8 @@ export default function EditRecipeScreen() {
   const [protein, onChangeProtein] = useState("");
   const [carbs, onChangeCarbs] = useState("");
 
+  const { user } = useAuth();
+  const username = user?.email?.split("@")[0] || "User";
   useEffect(() => {
     if (params.recipeData) {
       try {
@@ -95,14 +97,17 @@ export default function EditRecipeScreen() {
       };
 
       // Load custom recipes and update the specific one
-      const stored = await AsyncStorage.getItem('customRecipes');
+      const stored = await AsyncStorage.getItem("customRecipes");
       const currentRecipes = stored ? JSON.parse(stored) : [];
-      
-      const updatedRecipes = currentRecipes.map((r: RecipeData) => 
+
+      const updatedRecipes = currentRecipes.map((r: RecipeData) =>
         r.id === recipeId ? updatedRecipe : r
       );
-      
-      await AsyncStorage.setItem('customRecipes', JSON.stringify(updatedRecipes));
+
+      await AsyncStorage.setItem(
+        "customRecipes",
+        JSON.stringify(updatedRecipes)
+      );
 
       Alert.alert("Success", "Recipe updated!", [
         {
@@ -130,7 +135,7 @@ export default function EditRecipeScreen() {
           paddingTop: 60,
         }}
       >
-        <Header username="{username}" icon="Hamburger" />
+        <Header username={username} icon="Hamburger" />
 
         {/* Back Button & Title */}
         <View

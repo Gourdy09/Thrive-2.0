@@ -1,25 +1,35 @@
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Calendar, Clock, Coffee, Moon, Pizza, Sunrise, Sunset, Trash2 } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Coffee,
+  Moon,
+  Pizza,
+  Sunrise,
+  Sunset,
+  Trash2,
+} from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    Image,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  Alert,
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from "react-native";
-
 interface FoodLogEntry {
   id: string;
   recipeId?: string;
   recipeName: string;
   timestamp: Date;
-  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  mealType: "breakfast" | "lunch" | "dinner" | "snack";
   nutrition: {
     protein: number;
     carbs: number;
@@ -35,6 +45,8 @@ export default function FoodLogScreen() {
   const [foodLog, setFoodLog] = useState<FoodLogEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
+  const { user } = useAuth();
+  const username = user?.email?.split("@")[0] || "User";
   useEffect(() => {
     loadFoodLog();
   }, [selectedDate]);
@@ -42,7 +54,7 @@ export default function FoodLogScreen() {
   const loadFoodLog = async () => {
     try {
       // TODO: Load from AsyncStorage or Supabase
-      const stored = await AsyncStorage.getItem('foodLog');
+      const stored = await AsyncStorage.getItem("foodLog");
       if (stored) {
         const parsed = JSON.parse(stored).map((entry: any) => ({
           ...entry,
@@ -57,7 +69,7 @@ export default function FoodLogScreen() {
 
   const saveFoodLog = async (log: FoodLogEntry[]) => {
     try {
-      await AsyncStorage.setItem('foodLog', JSON.stringify(log));
+      await AsyncStorage.setItem("foodLog", JSON.stringify(log));
     } catch (error) {
       console.error("Error saving food log:", error);
     }
@@ -73,7 +85,7 @@ export default function FoodLogScreen() {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            const newLog = foodLog.filter(entry => entry.id !== id);
+            const newLog = foodLog.filter((entry) => entry.id !== id);
             setFoodLog(newLog);
             saveFoodLog(newLog);
           },
@@ -85,8 +97,8 @@ export default function FoodLogScreen() {
   const clearOldEntries = async () => {
     const threeDaysAgo = new Date();
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-    
-    const newLog = foodLog.filter(entry => entry.timestamp > threeDaysAgo);
+
+    const newLog = foodLog.filter((entry) => entry.timestamp > threeDaysAgo);
     setFoodLog(newLog);
     await saveFoodLog(newLog);
   };
@@ -97,13 +109,13 @@ export default function FoodLogScreen() {
 
   const getMealIcon = (mealType: string) => {
     switch (mealType) {
-      case 'breakfast':
+      case "breakfast":
         return Sunrise;
-      case 'lunch':
+      case "lunch":
         return Sunset;
-      case 'dinner':
+      case "dinner":
         return Moon;
-      case 'snack':
+      case "snack":
         return Coffee;
       default:
         return Pizza;
@@ -112,21 +124,21 @@ export default function FoodLogScreen() {
 
   const getMealColor = (mealType: string) => {
     switch (mealType) {
-      case 'breakfast':
-        return '#FF6B6B';
-      case 'lunch':
-        return '#4ECDC4';
-      case 'dinner':
-        return '#95E1D3';
-      case 'snack':
-        return '#FFA07A';
+      case "breakfast":
+        return "#FF6B6B";
+      case "lunch":
+        return "#4ECDC4";
+      case "dinner":
+        return "#95E1D3";
+      case "snack":
+        return "#FFA07A";
       default:
         return theme.icon;
     }
   };
 
   const groupByMealType = () => {
-    const todayEntries = foodLog.filter(entry => {
+    const todayEntries = foodLog.filter((entry) => {
       const entryDate = new Date(entry.timestamp);
       return entryDate.toDateString() === selectedDate.toDateString();
     });
@@ -138,7 +150,7 @@ export default function FoodLogScreen() {
       snack: [],
     };
 
-    todayEntries.forEach(entry => {
+    todayEntries.forEach((entry) => {
       grouped[entry.mealType].push(entry);
     });
 
@@ -146,7 +158,7 @@ export default function FoodLogScreen() {
   };
 
   const getTotalNutrition = () => {
-    const todayEntries = foodLog.filter(entry => {
+    const todayEntries = foodLog.filter((entry) => {
       const entryDate = new Date(entry.timestamp);
       return entryDate.toDateString() === selectedDate.toDateString();
     });
@@ -173,7 +185,7 @@ export default function FoodLogScreen() {
         paddingTop: 60,
       }}
     >
-      <Header username="{username}" icon="Hamburger" />
+      <Header username={username} icon="Hamburger" />
 
       <View
         style={{
@@ -215,7 +227,13 @@ export default function FoodLogScreen() {
           borderColor: theme.border,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
           <Calendar size={20} color={theme.icon} />
           <Text
             style={{
@@ -234,7 +252,9 @@ export default function FoodLogScreen() {
             <Text style={{ color: theme.icon, fontSize: 12, marginBottom: 4 }}>
               Protein
             </Text>
-            <Text style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}>
+            <Text
+              style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}
+            >
               {totalNutrition.protein}g
             </Text>
           </View>
@@ -242,7 +262,9 @@ export default function FoodLogScreen() {
             <Text style={{ color: theme.icon, fontSize: 12, marginBottom: 4 }}>
               Carbs
             </Text>
-            <Text style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}>
+            <Text
+              style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}
+            >
               {totalNutrition.carbs}g
             </Text>
           </View>
@@ -250,7 +272,9 @@ export default function FoodLogScreen() {
             <Text style={{ color: theme.icon, fontSize: 12, marginBottom: 4 }}>
               Calories
             </Text>
-            <Text style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}>
+            <Text
+              style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}
+            >
               {totalNutrition.calories || 0}
             </Text>
           </View>
@@ -258,126 +282,128 @@ export default function FoodLogScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((mealType) => {
-          const entries = groupedEntries[mealType];
-          if (entries.length === 0) return null;
+        {(["breakfast", "lunch", "dinner", "snack"] as const).map(
+          (mealType) => {
+            const entries = groupedEntries[mealType];
+            if (entries.length === 0) return null;
 
-          const MealIcon = getMealIcon(mealType);
-          const mealColor = getMealColor(mealType);
+            const MealIcon = getMealIcon(mealType);
+            const mealColor = getMealColor(mealType);
 
-          return (
-            <View key={mealType} style={{ marginBottom: 24 }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginBottom: 12,
-                }}
-              >
-                <MealIcon size={20} color={mealColor} />
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: "700",
-                    color: theme.text,
-                    marginLeft: 8,
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {mealType}
-                </Text>
-              </View>
-
-              {entries.map((entry) => (
+            return (
+              <View key={mealType} style={{ marginBottom: 24 }}>
                 <View
-                  key={entry.id}
                   style={{
-                    backgroundColor: theme.cardBackground,
-                    borderRadius: 12,
-                    padding: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
                     marginBottom: 12,
-                    borderLeftWidth: 4,
-                    borderLeftColor: mealColor,
-                    borderWidth: 2,
-                    borderColor: theme.border,
                   }}
                 >
-                  <View
+                  <MealIcon size={20} color={mealColor} />
+                  <Text
                     style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
+                      fontSize: 18,
+                      fontWeight: "700",
+                      color: theme.text,
+                      marginLeft: 8,
+                      textTransform: "capitalize",
                     }}
                   >
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: "600",
-                          color: theme.text,
-                          marginBottom: 4,
-                        }}
-                      >
-                        {entry.recipeName}
-                      </Text>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          marginBottom: 8,
-                        }}
-                      >
-                        <Clock size={12} color={theme.icon} />
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            color: theme.icon,
-                            marginLeft: 4,
-                          }}
-                        >
-                          {entry.timestamp.toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </Text>
-                      </View>
-                      <View style={{ flexDirection: "row", gap: 16 }}>
-                        <Text style={{ fontSize: 12, color: theme.icon }}>
-                          Protein: {entry.nutrition.protein}g
-                        </Text>
-                        <Text style={{ fontSize: 12, color: theme.icon }}>
-                          Carbs: {entry.nutrition.carbs}g
-                        </Text>
-                      </View>
-                    </View>
+                    {mealType}
+                  </Text>
+                </View>
 
-                    {entry.imageUrl && (
-                      <Image
-                        source={{ uri: entry.imageUrl }}
-                        style={{
-                          width: 60,
-                          height: 60,
-                          borderRadius: 8,
-                          marginLeft: 12,
-                        }}
-                      />
-                    )}
-
-                    <TouchableOpacity
-                      onPress={() => deleteEntry(entry.id)}
+                {entries.map((entry) => (
+                  <View
+                    key={entry.id}
+                    style={{
+                      backgroundColor: theme.cardBackground,
+                      borderRadius: 12,
+                      padding: 16,
+                      marginBottom: 12,
+                      borderLeftWidth: 4,
+                      borderLeftColor: mealColor,
+                      borderWidth: 2,
+                      borderColor: theme.border,
+                    }}
+                  >
+                    <View
                       style={{
-                        padding: 8,
-                        marginLeft: 8,
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
                       }}
                     >
-                      <Trash2 size={18} color="#FF6B6B" />
-                    </TouchableOpacity>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontSize: 16,
+                            fontWeight: "600",
+                            color: theme.text,
+                            marginBottom: 4,
+                          }}
+                        >
+                          {entry.recipeName}
+                        </Text>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            marginBottom: 8,
+                          }}
+                        >
+                          <Clock size={12} color={theme.icon} />
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: theme.icon,
+                              marginLeft: 4,
+                            }}
+                          >
+                            {entry.timestamp.toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: "row", gap: 16 }}>
+                          <Text style={{ fontSize: 12, color: theme.icon }}>
+                            Protein: {entry.nutrition.protein}g
+                          </Text>
+                          <Text style={{ fontSize: 12, color: theme.icon }}>
+                            Carbs: {entry.nutrition.carbs}g
+                          </Text>
+                        </View>
+                      </View>
+
+                      {entry.imageUrl && (
+                        <Image
+                          source={{ uri: entry.imageUrl }}
+                          style={{
+                            width: 60,
+                            height: 60,
+                            borderRadius: 8,
+                            marginLeft: 12,
+                          }}
+                        />
+                      )}
+
+                      <TouchableOpacity
+                        onPress={() => deleteEntry(entry.id)}
+                        style={{
+                          padding: 8,
+                          marginLeft: 8,
+                        }}
+                      >
+                        <Trash2 size={18} color="#FF6B6B" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              ))}
-            </View>
-          );
-        })}
+                ))}
+              </View>
+            );
+          }
+        )}
 
         {foodLog.length === 0 && (
           <View

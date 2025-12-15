@@ -4,6 +4,7 @@ import MedicationFormModal from "@/components/medication/MedicationFormModal";
 import MedicationListItem from "@/components/medication/MedicationListItem";
 import NextMedicationCard from "@/components/medication/NextMedicationCard";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/contexts/AuthContext";
 import { Medication, NextMedication } from "@/types/medication";
 import { Plus } from "lucide-react-native";
 import React, { useState } from "react";
@@ -14,19 +15,30 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-
 interface MedicationScreenProps {
   medications: Medication[];
   nextMedication: NextMedication | null;
   onAddMedication: (medication: Omit<Medication, "id">) => void;
   onUpdateMedication: (id: string, medication: Partial<Medication>) => void;
   onDeleteMedication: (id: string) => void;
-  onToggleAlarm: (medicationId: string, alarmId: string, enabled: boolean) => void;
+  onToggleAlarm: (
+    medicationId: string,
+    alarmId: string,
+    enabled: boolean
+  ) => void;
 }
 
 const MEDICATION_COLORS = [
-  "#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8",
-  "#F7DC6F", "#BB8FCE", "#85C1E2", "#F8B739", "#52C4B8"
+  "#FF6B6B",
+  "#4ECDC4",
+  "#45B7D1",
+  "#FFA07A",
+  "#98D8C8",
+  "#F7DC6F",
+  "#BB8FCE",
+  "#85C1E2",
+  "#F8B739",
+  "#52C4B8",
 ];
 
 export default function MedicationScreen({
@@ -41,7 +53,8 @@ export default function MedicationScreen({
 
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
+  const [selectedMedication, setSelectedMedication] =
+    useState<Medication | null>(null);
 
   const handleAddMedication = (data: {
     name: string;
@@ -79,13 +92,23 @@ export default function MedicationScreen({
     setSelectedMedication(medication);
     setEditModalVisible(true);
   };
-
+  const { user } = useAuth();
+  const username = user?.email?.split("@")[0] || "User";
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background, paddingHorizontal: 14, paddingTop: 60 }}>
-      <Header username="{UserName}" icon="Pill" />
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme.background,
+        paddingHorizontal: 14,
+        paddingTop: 60,
+      }}
+    >
+      <Header username={username} icon="Pill" />
       <ScrollView style={{ flex: 1 }}>
         {/* Next Medication Card */}
-        {nextMedication && <NextMedicationCard nextMedication={nextMedication} />}
+        {nextMedication && (
+          <NextMedicationCard nextMedication={nextMedication} />
+        )}
 
         {/* Medications List */}
         <View style={{ padding: 20, paddingTop: nextMedication ? 0 : 20 }}>
