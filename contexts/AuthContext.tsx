@@ -90,24 +90,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
-  const checkProfileComplete = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("user_info")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    if (error) {
-      console.log(error);
-      return false;
-    }
-    if (!data) {
-      return false;
-    }
+  async function checkProfileComplete(userId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from("user_info")
+        .select("*")
+        .eq("id", userId)
+        .single();
 
-    return (
-      data && Object.values(data).every((val) => val !== null && val !== "")
-    );
-  };
+      if (error) {
+        console.error("Error checking profile:", error);
+        return false;
+      }
+
+      if (!data) {
+        return false;
+      }
+
+      return Object.values(data).every((val) => val !== null && val !== "");
+    } catch (error) {
+      console.error("Error in checkProfileComplete:", error);
+      return false;
+    }
+  }
   return (
     <AuthContext.Provider
       value={{

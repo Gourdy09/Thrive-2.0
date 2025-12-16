@@ -25,23 +25,6 @@ interface YouSectionProps {
     onDietaryRestrictionChange: (restrictions: string[]) => void;
 }
 
-// Add these types to your types/settings.ts file:
-// 
-// export interface YouSettings {
-//   birthdate: string;
-//   gender: "Male" | "Female";
-//   race: string;
-//   diabetesType: "Type 1" | "Type 2" | "Prediabetes" | "None";
-//   baselineGlucose: string;
-//   height: string;
-//   weight: string;
-//   activityLevel: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active";
-//   dietaryRestrictions: string[];
-// }
-//
-// And update AppSettings interface to include:
-// you: YouSettings;
-
 const ETHNICITIES = [
     "American Indian or Alaska Native",
     "Asian",

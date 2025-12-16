@@ -39,6 +39,8 @@ export default function Dashboard() {
     return `${hour}${suffix}`;
   });
 
+  const { checkProfileComplete } = useAuth();
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -72,16 +74,15 @@ export default function Dashboard() {
 
     const checkProfile = async () => {
       if (user?.id) {
-        const { checkProfileComplete } = useAuth();
-        const isComplete = await checkProfileComplete;
+        const isComplete = await checkProfileComplete(user.id); // Call the function with userId and await it
 
         if (!isComplete) {
           Alert.alert(
-            "Completer your profile man",
-            "For the love of god finish settings. ",
+            "Complete your profile",
+            "Please complete your profile settings to continue.",
             [
               {
-                text: "Go to settings and finish it dumb dumb",
+                text: "Go to Settings",
                 onPress: () => router.push("/(tabs)/account/settings"),
               },
             ]
@@ -89,6 +90,7 @@ export default function Dashboard() {
         }
       }
     };
+
     loadData();
     checkProfile();
   }, [user]);
