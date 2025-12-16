@@ -9,11 +9,13 @@ import RenameDeviceModal from "@/components/account/settings/modals/RenameDevice
 import PreferencesSection from "@/components/account/settings/PrefrencesSection";
 import YouSection from "@/components/account/settings/YouSection";
 import { Colors } from "@/constants/Colors";
+import { useAuth } from "@/contexts/AuthContext";
 import { AppSettings, BluetoothDevice, CGMDevice } from "@/types/settings";
 import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import React from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -22,7 +24,6 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-
 interface SettingsScreenProps {
   settings: AppSettings;
   emailModalVisible: boolean;
@@ -50,11 +51,15 @@ interface SettingsScreenProps {
   onBirthdateChange: (date: string) => void;
   onGenderChange: (gender: "Male" | "Female") => void;
   onRaceChange: (race: string) => void;
-  onDiabetesTypeChange: (type: "Type 1" | "Type 2" | "Prediabetes" | "None") => void;
+  onDiabetesTypeChange: (
+    type: "Type 1" | "Type 2" | "Prediabetes" | "None"
+  ) => void;
   onBaselineGlucoseChange: (glucose: string) => void;
   onHeightChange: (height: string) => void;
   onWeightChange: (weight: string) => void;
-  onActivityLevelChange: (level: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active") => void;
+  onActivityLevelChange: (
+    level: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active"
+  ) => void;
   onDietaryRestrictionChange: (restrictions: string[]) => void;
 
   onStartBluetoothScan: () => void;
@@ -70,7 +75,20 @@ export default function SettingsScreen(props: SettingsScreenProps) {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
   const router = useRouter();
+  const { user, deleteAct, signOut } = useAuth();
 
+  const onDeleteAccount = async () => {
+    try {
+      if (user?.id) {
+        await deleteAct(user.id);
+        props.setDeleteAccountModalVisible(false);
+        router.push("/(auth)/login");
+      }
+    } catch (error) {
+      console.error("Error deleting account", error);
+      Alert.alert("Error", "Failed to delete account. Try again");
+    }
+  };
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.background }}
@@ -190,7 +208,7 @@ export default function SettingsScreen(props: SettingsScreenProps) {
       <DeleteAccountModal
         visible={props.deleteAccountModalVisible}
         onClose={() => props.setDeleteAccountModalVisible(false)}
-        onConfirm={props.onDeleteAccount}
+        onConfirm={onDeleteAccount}
       />
 
       <AddDeviceModal

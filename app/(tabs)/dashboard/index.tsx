@@ -14,7 +14,8 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-export default function Dashboard() {
+
+export default function index() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const router = useRouter();
   const [profileComplete, setProfileComplete] = useState(true);
+  const [alertShown, setAlertShown] = useState(false);
 
   interface GlucoseReading {
     value: number;
@@ -68,32 +70,45 @@ export default function Dashboard() {
         }
       } catch (e) {
         console.error("loading Errror:", e);
-        console.log(e);
-      }
-    };
-
-    const checkProfile = async () => {
-      if (user?.id) {
-        const isComplete = await checkProfileComplete(user.id); // Call the function with userId and await it
-
-        if (!isComplete) {
-          Alert.alert(
-            "Complete your profile",
-            "Please complete your profile settings to continue.",
-            [
-              {
-                text: "Go to Settings",
-                onPress: () => router.push("/(tabs)/account/settings"),
-              },
-            ]
-          );
-        }
       }
     };
 
     loadData();
-    checkProfile();
   }, [user]);
+
+  useEffect(() => {
+    const checkProfile = async () => {
+      if (user?.id && !alertShown) {
+        try {
+          const isComplete = await checkProfileComplete(user.id);
+          setProfileComplete(isComplete);
+
+          if (!isComplete) {
+            setAlertShown(true);
+            Alert.alert(
+              "Complete your profile",
+              "Please complete your profile settings to continue.",
+              [
+                {
+                  text: "Go to Settings",
+                  onPress: () => router.push("/(tabs)/account/settings"),
+                },
+                {
+                  text: "Later",
+                  style: "cancel",
+                  onPress: () => setAlertShown(false),
+                },
+              ]
+            );
+          }
+        } catch (error) {
+          console.error("Error checking profile:", error);
+        }
+      }
+    };
+
+    checkProfile();
+  }, [user, alertShown]);
 
   const chartWidth = Math.max(Dimensions.get("window").width * 4, 800);
   const centerScroll = () => {
@@ -162,6 +177,7 @@ export default function Dashboard() {
     ],
   };
   const username = (user?.email as string)?.split("@")[0] || "User";
+
   return (
     <View
       style={{
@@ -175,7 +191,6 @@ export default function Dashboard() {
       <Header username={username} icon="LayoutDashboard" />
 
       {/* Report Card */}
-
       <DashboardReport
         bloodGlucoseLevel={bloodGlucoseLevel}
         units={units}

@@ -13,6 +13,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   completeFirstLaunch: () => Promise<void>;
   checkProfileComplete: (userId: string) => Promise<boolean>;
+  deleteAct: (userId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -96,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from("user_info")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error checking profile:", error);
@@ -113,6 +114,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
   }
+  async function deleteAct(userId: string) {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "delete-account",
+        {
+          body: { userId },
+        }
+      );
+
+      if (error) throw error;
+
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      throw error;
+    }
+  }
   return (
     <AuthContext.Provider
       value={{
@@ -125,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut,
         completeFirstLaunch,
         checkProfileComplete,
+        deleteAct,
       }}
     >
       {children}

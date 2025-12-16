@@ -37,13 +37,12 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await signIn(email.trim().toLowerCase(), password);
-      Alert.alert("Success", "You in Gang!", [
-        { text: "OK", onPress: () => router.push("../(tabs)/dashboard") },
-      ]);
+
+      setLoading(false);
+      router.push("/(tabs)/dashboard");
     } catch (error: any) {
       console.error("Login error:", error);
       Alert.alert("Login Failed", error.message || "Invalid credentials");
-    } finally {
       setLoading(false);
     }
   };
