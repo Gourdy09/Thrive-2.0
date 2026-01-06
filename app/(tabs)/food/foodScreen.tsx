@@ -9,13 +9,14 @@ import {
   BookOpen,
   Camera,
   ChevronRight,
-  TableOfContents,
+  Sparkles,
+  TrendingUp,
+  Zap,
 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
+  Animated,
   Dimensions,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,6 +25,7 @@ import {
   View,
 } from "react-native";
 import Popup from "./extendedRecipeInfoModal";
+
 interface RecipeData {
   id: string;
   title: string;
@@ -42,42 +44,73 @@ interface FoodScreenProps {
   username?: string;
 }
 
-interface CustomButtonProps {
-  title: string;
-  onPress: () => void;
-  disabled?: boolean;
-  icon: React.ComponentType<{ size: number; color: string }>;
-}
+const { width } = Dimensions.get("window");
 
-const CustomButton: React.FC<CustomButtonProps> = ({
-  title,
-  onPress,
-  disabled = false,
+// Quick Action Card Component
+function QuickActionCard({
   icon: Icon,
-}) => {
+  title,
+  subtitle,
+  color,
+  onPress,
+}: {
+  icon: React.ComponentType<any>;
+  title: string;
+  subtitle: string;
+  color: string;
+  onPress: () => void;
+}) {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => [
-        styles.button,
-        {
-          backgroundColor: pressed ? theme.cardSelected : theme.cardBackground,
-        },
-        disabled && { opacity: 0.5 },
-      ]}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      activeOpacity={1}
     >
-      {Icon && (
-        <View style={{ marginBottom: 8 }}>
-          <Icon size={60} color={theme.icon} />
+      <Animated.View
+        style={[
+          styles.actionCard,
+          {
+            backgroundColor: theme.cardBackground,
+            borderColor: theme.border,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
+        <View style={[styles.actionIcon, { backgroundColor: color + "20" }]}>
+          <Icon size={24} color={color} />
         </View>
-      )}
-      <Text style={{ color: theme.text }}>{title}</Text>
-    </Pressable>
+        <View style={styles.actionContent}>
+          <Text style={[styles.actionTitle, { color: theme.text }]}>
+            {title}
+          </Text>
+          <Text style={[styles.actionSubtitle, { color: theme.icon }]}>
+            {subtitle}
+          </Text>
+        </View>
+        <ChevronRight size={20} color={theme.icon} />
+      </Animated.View>
+    </TouchableOpacity>
   );
-};
+}
 
 export default function FoodScreen({ username = "U" }: FoodScreenProps) {
   const router = useRouter();
@@ -91,19 +124,21 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
   const [showSavedRecipes, setShowSavedRecipes] = useState(false);
   const { recipeData, loading, error } = useMockWebscrape();
 
-  const suggestionsScrollRef = useRef<ScrollView>(null);
-  const savedScrollRef = useRef<ScrollView>(null);
-  const screenWidth = Dimensions.get("window").width;
-  const cardWidth = 280 + 16; // card width + margin
-
   const { user } = useAuth();
   const username1 = user?.email?.split("@")[0] || "User";
-  // Load bookmarked recipes and food log count
+
+  // Greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
+
   useEffect(() => {
     loadBookmarkedRecipes();
     loadFoodLogCount();
 
-    // Listener for food log updates
     const interval = setInterval(loadFoodLogCount, 3000);
     return () => clearInterval(interval);
   }, []);
@@ -140,7 +175,6 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
         "bookmarkedRecipes",
         JSON.stringify(bookmarks)
       );
-      console.log("Bookmarks saved:", bookmarks);
     } catch (error) {
       console.error("Error saving bookmarks:", error);
     }
@@ -157,112 +191,197 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
   };
 
   const handleRecipePress = (recipeID: string) => {
-    console.log("Recipe pressed:", recipeID);
     setSelectedRecipeID(recipeID);
     setIsPopUpVisible(true);
   };
 
+  const handleCameraPress = () => router.push("/(tabs)/food/cameraScreen");
+  const handleFoodLog = () => router.push("/(tabs)/food/foodLogScreen");
   const handleSeeAll = () => router.push("/(tabs)/food/allRecipesScreen");
   const handleManualEntry = () => router.push("/(tabs)/food/manualEntryScreen");
-  const handleCameraEntry = () => router.push("/(tabs)/food/cameraScreen");
-  const handleFoodLog = () => {
-    console.log("Opening food log...");
+  const handleInsights = () => router.push("/(tabs)/food/nutritionInsights");
+
+  // Load custom recipes from AsyncStorage
+  const [customRecipes, setCustomRecipes] = useState<RecipeData[]>([]);
+
+  useEffect(() => {
+    loadCustomRecipes();
+  }, []);
+
+  const loadCustomRecipes = async () => {
     try {
-      router.push("/(tabs)/food/foodLogScreen");
+      const stored = await AsyncStorage.getItem("customRecipes");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setCustomRecipes(parsed);
+      }
     } catch (error) {
-      console.error("Navigation error:", error);
-      Alert.alert("Coming Soon", "Food log feature will be available soon!");
+      console.error("Error loading custom recipes:", error);
     }
   };
 
-  // Snap to card on scroll
-  const handleScrollEnd = (
-    event: any,
-    scrollRef: React.RefObject<ScrollView | null>
-  ) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / cardWidth);
-    scrollRef.current?.scrollTo({ x: index * cardWidth, animated: true });
-  };
+  // Combine custom recipes with fetched recipes
+  const allRecipes = [...customRecipes, ...recipeData];
 
-  const savedRecipes = recipeData.filter((recipe) =>
+  const savedRecipes = allRecipes.filter((recipe) =>
     bookmarkedRecipes.includes(recipe.id)
   );
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: theme.background,
-        paddingHorizontal: 14,
-        paddingTop: 60,
-      }}
-    >
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Header username={username1} icon="Hamburger" />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={{ padding: 16 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 16,
-            }}
-          >
-            <Text
-              style={{ fontSize: 25, fontWeight: "bold", color: theme.text }}
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+
+        {/* AI Camera Scanner Card */}
+        <TouchableOpacity
+          style={[styles.scannerCard, { backgroundColor: theme.tint }]}
+          onPress={handleCameraPress}
+          activeOpacity={0.9}
+        >
+          <View style={styles.scannerContent}>
+            <View
+              style={[
+                styles.scannerIcon,
+                { backgroundColor: theme.background },
+              ]}
             >
-              Suggestions
-            </Text>
-            <TouchableOpacity
-              onPress={handleSeeAll}
-              style={{ flexDirection: "row", alignItems: "center" }}
+              <Camera size={28} color={theme.tint} />
+            </View>
+            <View style={styles.scannerText}>
+              <Text
+                style={[
+                  styles.scannerTitle,
+                  { color: theme.background },
+                ]}
+              >
+                AI Food Scanner
+              </Text>
+              <Text
+                style={[
+                  styles.scannerSubtitle,
+                  { color: theme.background },
+                ]}
+              >
+                Instant nutrition analysis
+              </Text>
+            </View>
+          </View>
+          <Sparkles size={24} color={theme.background} />
+        </TouchableOpacity>
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Quick Actions
+          </Text>
+          <View style={styles.actionsContainer}>
+            <QuickActionCard
+              icon={BookOpen}
+              title="Food Log"
+              subtitle={`${foodLogCount} meals today`}
+              color="#10B981"
+              onPress={handleFoodLog}
+            />
+            <QuickActionCard
+              icon={TrendingUp}
+              title="Nutrition Insights"
+              subtitle="View your trends"
+              color="#3B82F6"
+              onPress={handleInsights}
+            />
+          </View>
+        </View>
+
+        {/* Custom Recipes Section */}
+        {customRecipes.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  Your Recipes
+                </Text>
+                <View
+                  style={[
+                    styles.badge,
+                    { backgroundColor: "#10B981" + "30" },
+                  ]}
+                >
+                  <Text style={[styles.badgeText, { color: "#10B981" }]}>
+                    {customRecipes.length}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.recipesScroll}
             >
-              <Text style={{ color: theme.icon, marginRight: 4 }}>See all</Text>
-              <ChevronRight size={16} color={theme.icon} />
+              {customRecipes.map((recipe) => (
+                <RecipeCard
+                  key={recipe.id}
+                  {...recipe}
+                  isBookmarked={bookmarkedRecipes.includes(recipe.id)}
+                  onPress={handleRecipePress}
+                  onToggleBookmark={toggleBookmark}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Add Custom Recipe Button */}
+        <TouchableOpacity
+          style={[styles.addRecipeButton, { 
+            backgroundColor: theme.cardBackground,
+            borderColor: theme.tint 
+          }]}
+          onPress={handleManualEntry}
+        >
+          <Text style={[styles.addRecipeText, { color: theme.tint }]}>
+            + Create Custom Recipe
+          </Text>
+        </TouchableOpacity>
+
+        {/* For You Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleContainer}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                For You
+              </Text>
+              <Zap size={20} color={theme.tint} />
+            </View>
+            <TouchableOpacity onPress={handleSeeAll}>
+              <Text style={[styles.seeAll, { color: theme.tint }]}>
+                See all
+              </Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView
-            ref={suggestionsScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
-            snapToInterval={cardWidth}
-            decelerationRate="fast"
-            onMomentumScrollEnd={(e) =>
-              handleScrollEnd(e, suggestionsScrollRef)
-            }
-            contentContainerStyle={{ paddingRight: 16 }}
+            contentContainerStyle={styles.recipesScroll}
           >
             {loading && (
-              <View
-                style={{
-                  width: 280,
-                  marginRight: 16,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: 200,
-                }}
-              >
-                <Text style={{ color: theme.text }}>Loading...</Text>
+              <View style={styles.loadingContainer}>
+                <Text style={{ color: theme.text }}>Loading recipes...</Text>
               </View>
             )}
             {error && (
-              <View
-                style={{
-                  width: 280,
-                  marginRight: 16,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: 200,
-                }}
-              >
+              <View style={styles.loadingContainer}>
                 <Text style={{ color: theme.text }}>Error: {error}</Text>
               </View>
             )}
             {!loading &&
               !error &&
-              recipeData.map((recipe) => (
+              allRecipes.map((recipe) => (
                 <RecipeCard
                   key={recipe.id}
                   {...recipe}
@@ -272,191 +391,217 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
                 />
               ))}
           </ScrollView>
-
-          {/* Saved Recipes Section */}
-          {savedRecipes.length > 0 && (
-            <>
-              <TouchableOpacity
-                onPress={() => setShowSavedRecipes(!showSavedRecipes)}
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginTop: 24,
-                  marginBottom: 16,
-                  paddingVertical: 8,
-                }}
-              >
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      fontWeight: "600",
-                      color: theme.text,
-                    }}
-                  >
-                    Saved Recipes
-                  </Text>
-                  <View
-                    style={{
-                      backgroundColor: theme.tint + "30",
-                      borderRadius: 12,
-                      paddingHorizontal: 8,
-                      paddingVertical: 2,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "700",
-                        color: theme.tint,
-                      }}
-                    >
-                      {savedRecipes.length}
-                    </Text>
-                  </View>
-                </View>
-                <ChevronRight
-                  size={20}
-                  color={theme.icon}
-                  style={{
-                    transform: [
-                      { rotate: showSavedRecipes ? "90deg" : "0deg" },
-                    ],
-                  }}
-                />
-              </TouchableOpacity>
-
-              {showSavedRecipes && (
-                <ScrollView
-                  ref={savedScrollRef}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  snapToInterval={cardWidth}
-                  decelerationRate="fast"
-                  onMomentumScrollEnd={(e) =>
-                    handleScrollEnd(e, savedScrollRef)
-                  }
-                  contentContainerStyle={{ paddingRight: 16 }}
-                >
-                  {savedRecipes.map((recipe) => (
-                    <RecipeCard
-                      key={recipe.id}
-                      {...recipe}
-                      isBookmarked={bookmarkedRecipes.includes(recipe.id)}
-                      onPress={handleRecipePress}
-                      onToggleBookmark={toggleBookmark}
-                    />
-                  ))}
-                </ScrollView>
-              )}
-            </>
-          )}
-
-          <Popup
-            visible={isPopUpVisible}
-            onClose={() => setIsPopUpVisible(false)}
-            title=" "
-            recipeId={selectedRecipeID}
-            isBookmarked={bookmarkedRecipes.includes(selectedRecipeID)}
-            onToggleBookmark={toggleBookmark}
-          >
-            <Text> </Text>
-          </Popup>
-
-          {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
-            <View style={{ flex: 1 }}>
-              <CustomButton
-                title="MANUAL"
-                onPress={handleManualEntry}
-                icon={TableOfContents}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <CustomButton
-                title="CAMERA"
-                onPress={handleCameraEntry}
-                icon={Camera}
-              />
-            </View>
-          </View>
-          <View style={{ height: 100 }} />
         </View>
-      </ScrollView>
 
-      {/* Floating Action Button for Food Log */}
-      <TouchableOpacity
-        onPress={handleFoodLog}
-        activeOpacity={0.7}
-        style={{
-          position: "absolute",
-          bottom: 24,
-          right: 24,
-          backgroundColor: theme.tint,
-          width: 64,
-          height: 64,
-          borderRadius: 32,
-          alignItems: "center",
-          justifyContent: "center",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 8,
-          zIndex: 1000,
-        }}
-      >
-        <BookOpen size={28} color={theme.background} strokeWidth={2.5} />
-        {foodLogCount > 0 && (
-          <View
-            style={{
-              position: "absolute",
-              top: -4,
-              right: -4,
-              backgroundColor: "#FF6B6B",
-              width: 24,
-              height: 24,
-              borderRadius: 12,
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 2,
-              borderColor: theme.background,
-            }}
-          >
-            <Text
-              style={{
-                color: "#fff",
-                fontSize: 12,
-                fontWeight: "700",
-              }}
+        {/* Saved Recipes Section */}
+        {savedRecipes.length > 0 && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              onPress={() => setShowSavedRecipes(!showSavedRecipes)}
+              style={styles.sectionHeader}
             >
-              {foodLogCount}
-            </Text>
+              <View style={styles.sectionTitleContainer}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  Saved Recipes
+                </Text>
+                <View
+                  style={[
+                    styles.badge,
+                    { backgroundColor: theme.tint + "30" },
+                  ]}
+                >
+                  <Text style={[styles.badgeText, { color: theme.tint }]}>
+                    {savedRecipes.length}
+                  </Text>
+                </View>
+              </View>
+              <ChevronRight
+                size={20}
+                color={theme.icon}
+                style={{
+                  transform: [
+                    { rotate: showSavedRecipes ? "90deg" : "0deg" },
+                  ],
+                }}
+              />
+            </TouchableOpacity>
+
+            {showSavedRecipes && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.recipesScroll}
+              >
+                {savedRecipes.map((recipe) => (
+                  <RecipeCard
+                    key={recipe.id}
+                    {...recipe}
+                    isBookmarked={true}
+                    onPress={handleRecipePress}
+                    onToggleBookmark={toggleBookmark}
+                  />
+                ))}
+              </ScrollView>
+            )}
           </View>
         )}
-      </TouchableOpacity>
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* Recipe Modal */}
+      <Popup
+        visible={isPopUpVisible}
+        onClose={() => setIsPopUpVisible(false)}
+        title=" "
+        recipeId={selectedRecipeID}
+        isBookmarked={bookmarkedRecipes.includes(selectedRecipeID)}
+        onToggleBookmark={toggleBookmark}
+      >
+        <Text> </Text>
+      </Popup>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+  container: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingTop: 60,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  greetingSection: {
+    marginBottom: 24,
+    paddingHorizontal: 10,
+  },
+  greeting: {
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  greetingTitle: {
+    fontSize: 32,
+    fontWeight: "800",
+  },
+  scannerCard: {
+    marginHorizontal: 10,
+    marginBottom: 32,
+    padding: 20,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  scannerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  scannerIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 16,
-    width: "100%",
+    marginRight: 16,
   },
-  buttonContainer: {
+  scannerText: {
+    flex: 1,
+  },
+  scannerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  scannerSubtitle: {
+    fontSize: 14,
+    opacity: 0.9,
+  },
+  section: {
+    marginBottom: 32,
+  },
+  sectionHeader: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 24,
+    marginBottom: 16,
+    paddingHorizontal: 10,
+  },
+  sectionTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  seeAll: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  actionsContainer: {
+    paddingHorizontal: 10,
     gap: 12,
+  },
+  actionCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+  },
+  actionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  actionContent: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  actionSubtitle: {
+    fontSize: 14,
+  },
+  recipesScroll: {
+    paddingLeft: 10,
+    paddingRight: 10,
+  },
+  loadingContainer: {
+    width: 280,
+    height: 200,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addRecipeButton: {
+    marginHorizontal: 10,
+    marginBottom: 24,
+    padding: 18,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    alignItems: "center",
+  },
+  addRecipeText: {
+    fontSize: 16,
+    fontWeight: "700",
   },
 });
