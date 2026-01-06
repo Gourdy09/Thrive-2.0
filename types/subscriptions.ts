@@ -1,3 +1,4 @@
+import type { PaymentMethodData } from "@/components/account/subscriptions/PaymentMethod";
 export interface PlanDescription {
   id: string;
   text: string;
@@ -15,7 +16,6 @@ export interface SubscriptionScreenProps {
   selectedPlan: string;
   onChangePlan: (planId: string) => void;
 }
-
 export interface PaymentScreenProps {
   paymentMethods: PaymentMethodData[];
   modalVisible: boolean;

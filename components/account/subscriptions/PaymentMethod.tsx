@@ -5,20 +5,25 @@ import { Text, TouchableOpacity, useColorScheme, View } from "react-native";
 
 export interface PaymentMethodData {
   id: string;
-  type: 'card' | 'bank';
+  type: "card" | "bank";
   lastFour: string;
   brand?: string;
   bankName?: string;
   isDefault: boolean;
+  supportedMethods: string[];
 }
 
-interface PaymentMethodProps {
+export interface PaymentMethodProps {
   method: PaymentMethodData;
   onSetDefault: () => void;
   onRemove: () => void;
 }
 
-export default function PaymentMethod({ method, onSetDefault, onRemove }: PaymentMethodProps) {
+export default function PaymentMethod({
+  method,
+  onSetDefault,
+  onRemove,
+}: PaymentMethodProps) {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
@@ -34,13 +39,13 @@ export default function PaymentMethod({ method, onSetDefault, onRemove }: Paymen
     >
       <View
         style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-          {method.type === 'card' ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+          {method.type === "card" ? (
             <CreditCard color={theme.tint} size={32} />
           ) : (
             <Building2 color={theme.tint} size={32} />
@@ -50,11 +55,11 @@ export default function PaymentMethod({ method, onSetDefault, onRemove }: Paymen
               style={{
                 color: theme.text,
                 fontSize: 16,
-                fontWeight: '700',
+                fontWeight: "700",
                 marginBottom: 4,
               }}
             >
-              {method.type === 'card' ? method.brand : method.bankName}
+              {method.type === "card" ? method.brand : method.bankName}
             </Text>
             <Text style={{ color: theme.icon, fontSize: 14 }}>
               •••• •••• •••• {method.lastFour}
@@ -69,8 +74,8 @@ export default function PaymentMethod({ method, onSetDefault, onRemove }: Paymen
               paddingHorizontal: 12,
               paddingVertical: 6,
               borderRadius: 8,
-              flexDirection: 'row',
-              alignItems: 'center',
+              flexDirection: "row",
+              alignItems: "center",
               gap: 4,
             }}
           >
@@ -79,7 +84,7 @@ export default function PaymentMethod({ method, onSetDefault, onRemove }: Paymen
               style={{
                 color: theme.background,
                 fontSize: 12,
-                fontWeight: '700',
+                fontWeight: "700",
               }}
             >
               Default
@@ -91,7 +96,7 @@ export default function PaymentMethod({ method, onSetDefault, onRemove }: Paymen
       {!method.isDefault && (
         <View
           style={{
-            flexDirection: 'row',
+            flexDirection: "row",
             gap: 8,
             marginTop: 16,
           }}
@@ -104,10 +109,10 @@ export default function PaymentMethod({ method, onSetDefault, onRemove }: Paymen
               borderRadius: 10,
               borderWidth: 2,
               borderColor: theme.border,
-              alignItems: 'center',
+              alignItems: "center",
             }}
           >
-            <Text style={{ color: theme.text, fontWeight: '600' }}>
+            <Text style={{ color: theme.text, fontWeight: "600" }}>
               Set as Default
             </Text>
           </TouchableOpacity>
@@ -118,13 +123,11 @@ export default function PaymentMethod({ method, onSetDefault, onRemove }: Paymen
               paddingVertical: 10,
               borderRadius: 10,
               borderWidth: 2,
-              borderColor: '#ef4444',
-              alignItems: 'center',
+              borderColor: "#ef4444",
+              alignItems: "center",
             }}
           >
-            <Text style={{ color: '#ef4444', fontWeight: '600' }}>
-              Remove
-            </Text>
+            <Text style={{ color: "#ef4444", fontWeight: "600" }}>Remove</Text>
           </TouchableOpacity>
         </View>
       )}

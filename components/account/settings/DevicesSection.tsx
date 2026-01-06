@@ -22,7 +22,7 @@ export default function DevicesSection({
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
-    
+
     if (minutes < 1) return "Just now";
     if (minutes < 60) return `${minutes}m ago`;
     const hours = Math.floor(minutes / 60);
@@ -59,9 +59,22 @@ export default function DevicesSection({
               borderColor: device.isActive ? theme.tint : theme.border,
             }}
           >
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+              }}
+            >
               <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 4,
+                  }}
+                >
                   <Text
                     style={{
                       fontSize: 16,
@@ -96,13 +109,27 @@ export default function DevicesSection({
                     </View>
                   )}
                 </View>
-                
-                <Text style={{ fontSize: 13, color: theme.icon, marginBottom: 8 }}>
+
+                <Text
+                  style={{ fontSize: 13, color: theme.icon, marginBottom: 8 }}
+                >
                   {device.serialNumber}
                 </Text>
 
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 16,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
                     <CircleDot
                       size={14}
                       color={device.isConnected ? "#10b981" : "#ef4444"}
@@ -113,7 +140,13 @@ export default function DevicesSection({
                     </Text>
                   </View>
 
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
                     <Battery size={14} color={theme.icon} />
                     <Text style={{ fontSize: 12, color: theme.icon }}>
                       {device.batteryLevel}%

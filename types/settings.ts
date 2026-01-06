@@ -10,6 +10,8 @@ export interface CGMDevice {
 }
 
 export interface YouSettings {
+  name: string;
+  age: string;
   birthdate: string;
   gender: "Male" | "Female";
   race: string;
@@ -26,9 +28,9 @@ export interface AppSettings {
   email: string;
 
   // Preferences
-  glucoseUnit: 'mg/dL' | 'mmol/L';
-  timeFormat: '12h' | '24h';
-  theme: 'light' | 'dark' | 'system';
+  glucoseUnit: "mg/dL" | "mmol/L";
+  timeFormat: "12h" | "24h";
+  theme: "light" | "dark" | "system";
 
   // Devices
   connectedDevices: CGMDevice[];

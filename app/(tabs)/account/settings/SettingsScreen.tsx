@@ -48,6 +48,8 @@ interface SettingsScreenProps {
   onThemeChange: (theme: "light" | "dark" | "system") => void;
 
   // You Section Props
+  onNameChange: (name: string) => void;
+  onAgeChange: (age: string) => void;
   onBirthdateChange: (date: string) => void;
   onGenderChange: (gender: "Male" | "Female") => void;
   onRaceChange: (race: string) => void;
@@ -144,6 +146,10 @@ export default function SettingsScreen(props: SettingsScreenProps) {
 
         {/* You section */}
         <YouSection
+          name={props.settings.you.name}
+          onNameChange={props.onNameChange}
+          age={props.settings.you.age}
+          onAgeChange={props.onAgeChange}
           birthdate={props.settings.you.birthdate}
           onBirthdateChange={props.onBirthdateChange}
           gender={props.settings.you.gender}
