@@ -70,7 +70,6 @@ interface SettingsScreenProps {
   onRenameDevice: (deviceId: string, newName: string) => void;
   onRemoveDevice: (deviceId: string) => void;
   onExportData: () => void;
-  onImportData: () => void;
 }
 
 export default function SettingsScreen(props: SettingsScreenProps) {
@@ -193,7 +192,6 @@ export default function SettingsScreen(props: SettingsScreenProps) {
         {/* Data & Privacy Section */}
         <DataPrivacySection
           onExportData={props.onExportData}
-          onImportData={props.onImportData}
         />
       </ScrollView>
 

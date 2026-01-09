@@ -1,14 +1,17 @@
-import useMockWebscrape from "@/components/food/mockWebscrape";
+// app/(tabs)/food/foodScreen.tsx - UPDATED
 import RecipeCard from "@/components/food/RecipeCard";
+import { RecipeSkeletonGrid } from "@/components/food/RecipeCardSkeleton";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRecipeScraper } from "@/hooks/useRecipeScraper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import {
   BookOpen,
   Camera,
   ChevronRight,
+  RefreshCw,
   Sparkles,
   TrendingUp,
   Zap,
@@ -31,13 +34,22 @@ interface RecipeData {
   title: string;
   imageUrl: string;
   ingredients: string[];
-  instructions: string[];
-  cT: string;
-  protein: number;
-  carbs: number;
-  tags: string[];
-  servingSize: string;
-  isBookmarked: boolean;
+  instructions?: string[];
+  cookingTime?: string;
+  prepTime?: string;
+  totalTime?: string;
+  servings?: string;
+  nutrition?: {
+    protein: number;
+    carbs: number;
+    fat?: number;
+    calories?: number;
+    fiber?: number;
+  };
+  tags?: string[];
+  difficulty?: string;
+  cuisine?: string;
+  isBookmarked?: boolean;
 }
 
 interface FoodScreenProps {
@@ -112,7 +124,7 @@ function QuickActionCard({
   );
 }
 
-export default function FoodScreen({ username = "U" }: FoodScreenProps) {
+export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
@@ -122,22 +134,21 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
   const [bookmarkedRecipes, setBookmarkedRecipes] = useState<string[]>([]);
   const [foodLogCount, setFoodLogCount] = useState(0);
   const [showSavedRecipes, setShowSavedRecipes] = useState(false);
-  const { recipeData, loading, error } = useMockWebscrape();
+  const [customRecipes, setCustomRecipes] = useState<RecipeData[]>([]);
 
   const { user } = useAuth();
   const username1 = user?.email?.split("@")[0] || "User";
 
-  // Greeting based on time of day
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good Morning";
-    if (hour < 18) return "Good Afternoon";
-    return "Good Evening";
-  };
+  // Use the new recipe scraper hook
+  const { recipes, loading, error, refreshRecipes, userPreferences } = useRecipeScraper();
 
   useEffect(() => {
     loadBookmarkedRecipes();
     loadFoodLogCount();
+    loadCustomRecipes();
+
+    // Initial recipe load
+    refreshRecipes("healthy diabetic-friendly recipes");
 
     const interval = setInterval(loadFoodLogCount, 3000);
     return () => clearInterval(interval);
@@ -169,6 +180,18 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
     }
   };
 
+  const loadCustomRecipes = async () => {
+    try {
+      const stored = await AsyncStorage.getItem("customRecipes");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setCustomRecipes(parsed);
+      }
+    } catch (error) {
+      console.error("Error loading custom recipes:", error);
+    }
+  };
+
   const saveBookmarkedRecipes = async (bookmarks: string[]) => {
     try {
       await AsyncStorage.setItem(
@@ -195,33 +218,13 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
     setIsPopUpVisible(true);
   };
 
-  const handleCameraPress = () => router.push("/(tabs)/food/cameraScreen");
-  const handleFoodLog = () => router.push("/(tabs)/food/foodLogScreen");
-  const handleSeeAll = () => router.push("/(tabs)/food/allRecipesScreen");
-  const handleManualEntry = () => router.push("/(tabs)/food/manualEntryScreen");
-  const handleInsights = () => router.push("/(tabs)/food/nutritionInsights");
-
-  // Load custom recipes from AsyncStorage
-  const [customRecipes, setCustomRecipes] = useState<RecipeData[]>([]);
-
-  useEffect(() => {
-    loadCustomRecipes();
-  }, []);
-
-  const loadCustomRecipes = async () => {
-    try {
-      const stored = await AsyncStorage.getItem("customRecipes");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setCustomRecipes(parsed);
-      }
-    } catch (error) {
-      console.error("Error loading custom recipes:", error);
-    }
-  };
+  const handleCameraPress = () => router.push("./cameraScreen");
+  const handleFoodLog = () => router.push("./foodLogScreen");
+  const handleManualEntry = () => router.push("./manualEntryScreen");
+  const handleInsights = () => router.push("./nutritionInsights");
 
   // Combine custom recipes with fetched recipes
-  const allRecipes = [...customRecipes, ...recipeData];
+  const allRecipes = [...customRecipes, ...recipes];
 
   const savedRecipes = allRecipes.filter((recipe) =>
     bookmarkedRecipes.includes(recipe.id)
@@ -235,7 +238,6 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-
         {/* AI Camera Scanner Card */}
         <TouchableOpacity
           style={[styles.scannerCard, { backgroundColor: theme.tint }]}
@@ -253,18 +255,12 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
             </View>
             <View style={styles.scannerText}>
               <Text
-                style={[
-                  styles.scannerTitle,
-                  { color: theme.background },
-                ]}
+                style={[styles.scannerTitle, { color: theme.background }]}
               >
                 AI Food Scanner
               </Text>
               <Text
-                style={[
-                  styles.scannerSubtitle,
-                  { color: theme.background },
-                ]}
+                style={[styles.scannerSubtitle, { color: theme.background }]}
               >
                 Instant nutrition analysis
               </Text>
@@ -296,6 +292,25 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
           </View>
         </View>
 
+        {/* Dietary Preferences Info */}
+        {userPreferences && userPreferences.dietaryRestrictions.length > 0 && (
+          <View
+            style={{
+              backgroundColor: theme.tint + "20",
+              borderWidth: 1,
+              borderColor: theme.tint + "40",
+              borderRadius: 12,
+              padding: 12,
+              marginHorizontal: 10,
+              marginBottom: 24,
+            }}
+          >
+            <Text style={{ color: theme.text, fontSize: 13, fontWeight: "600" }}>
+              Filtering for: {userPreferences.dietaryRestrictions.join(", ")}
+            </Text>
+          </View>
+        )}
+
         {/* Custom Recipes Section */}
         {customRecipes.length > 0 && (
           <View style={styles.section}>
@@ -305,10 +320,7 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
                   Your Recipes
                 </Text>
                 <View
-                  style={[
-                    styles.badge,
-                    { backgroundColor: "#10B981" + "30" },
-                  ]}
+                  style={[styles.badge, { backgroundColor: "#10B981" + "30" }]}
                 >
                   <Text style={[styles.badgeText, { color: "#10B981" }]}>
                     {customRecipes.length}
@@ -325,7 +337,7 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
               {customRecipes.map((recipe) => (
                 <RecipeCard
                   key={recipe.id}
-                  {...recipe}
+                  recipe={recipe}
                   isBookmarked={bookmarkedRecipes.includes(recipe.id)}
                   onPress={handleRecipePress}
                   onToggleBookmark={toggleBookmark}
@@ -337,10 +349,13 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
 
         {/* Add Custom Recipe Button */}
         <TouchableOpacity
-          style={[styles.addRecipeButton, { 
-            backgroundColor: theme.cardBackground,
-            borderColor: theme.tint 
-          }]}
+          style={[
+            styles.addRecipeButton,
+            {
+              backgroundColor: theme.cardBackground,
+              borderColor: theme.tint,
+            },
+          ]}
           onPress={handleManualEntry}
         >
           <Text style={[styles.addRecipeText, { color: theme.tint }]}>
@@ -348,7 +363,7 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
           </Text>
         </TouchableOpacity>
 
-        {/* For You Section */}
+        {/* For You Section - Web Scraped Recipes */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
@@ -357,40 +372,48 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
               </Text>
               <Zap size={20} color={theme.tint} />
             </View>
-            <TouchableOpacity onPress={handleSeeAll}>
-              <Text style={[styles.seeAll, { color: theme.tint }]}>
-                See all
-              </Text>
+            <TouchableOpacity onPress={() => refreshRecipes()}>
+              <RefreshCw size={20} color={theme.tint} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.recipesScroll}
-          >
-            {loading && (
-              <View style={styles.loadingContainer}>
-                <Text style={{ color: theme.text }}>Loading recipes...</Text>
-              </View>
-            )}
-            {error && (
-              <View style={styles.loadingContainer}>
-                <Text style={{ color: theme.text }}>Error: {error}</Text>
-              </View>
-            )}
-            {!loading &&
-              !error &&
-              allRecipes.map((recipe) => (
+          {loading ? (
+            <RecipeSkeletonGrid />
+          ) : error ? (
+            <View style={styles.loadingContainer}>
+              <Text style={{ color: theme.text }}>Error: {error}</Text>
+              <TouchableOpacity
+                onPress={() => refreshRecipes()}
+                style={{
+                  backgroundColor: theme.tint,
+                  padding: 12,
+                  borderRadius: 8,
+                  marginTop: 12,
+                }}
+              >
+                <Text style={{ color: theme.background, fontWeight: "600" }}>
+                  Retry
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.recipesScroll}
+            >
+              {recipes.map((recipe) => (
                 <RecipeCard
                   key={recipe.id}
-                  {...recipe}
+                  recipe={recipe}
                   isBookmarked={bookmarkedRecipes.includes(recipe.id)}
                   onPress={handleRecipePress}
                   onToggleBookmark={toggleBookmark}
                 />
+
               ))}
-          </ScrollView>
+            </ScrollView>
+          )}
         </View>
 
         {/* Saved Recipes Section */}
@@ -405,10 +428,7 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
                   Saved Recipes
                 </Text>
                 <View
-                  style={[
-                    styles.badge,
-                    { backgroundColor: theme.tint + "30" },
-                  ]}
+                  style={[styles.badge, { backgroundColor: theme.tint + "30" }]}
                 >
                   <Text style={[styles.badgeText, { color: theme.tint }]}>
                     {savedRecipes.length}
@@ -419,9 +439,7 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
                 size={20}
                 color={theme.icon}
                 style={{
-                  transform: [
-                    { rotate: showSavedRecipes ? "90deg" : "0deg" },
-                  ],
+                  transform: [{ rotate: showSavedRecipes ? "90deg" : "0deg" }],
                 }}
               />
             </TouchableOpacity>
@@ -435,8 +453,8 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
                 {savedRecipes.map((recipe) => (
                   <RecipeCard
                     key={recipe.id}
-                    {...recipe}
-                    isBookmarked={true}
+                    recipe={recipe}
+                    isBookmarked={bookmarkedRecipes.includes(recipe.id)}
                     onPress={handleRecipePress}
                     onToggleBookmark={toggleBookmark}
                   />
@@ -455,6 +473,7 @@ export default function FoodScreen({ username = "U" }: FoodScreenProps) {
         onClose={() => setIsPopUpVisible(false)}
         title=" "
         recipeId={selectedRecipeID}
+        allRecipes={allRecipes}
         isBookmarked={bookmarkedRecipes.includes(selectedRecipeID)}
         onToggleBookmark={toggleBookmark}
       >
@@ -472,18 +491,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 40,
-  },
-  greetingSection: {
-    marginBottom: 24,
-    paddingHorizontal: 10,
-  },
-  greeting: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  greetingTitle: {
-    fontSize: 32,
-    fontWeight: "800",
   },
   scannerCard: {
     marginHorizontal: 10,
@@ -537,10 +544,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: "700",
-  },
-  seeAll: {
-    fontSize: 16,
-    fontWeight: "600",
   },
   badge: {
     paddingHorizontal: 10,

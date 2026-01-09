@@ -583,15 +583,6 @@ export default function SettingsContainer() {
     }
   };
 
-  const handleImportData = async () => {
-    try {
-      // TODO: Implement data import
-      console.log("Importing data...");
-    } catch (error) {
-      console.error("Error importing data:", error);
-    }
-  };
-
   return (
     <SettingsScreen
       settings={settings}
@@ -632,7 +623,6 @@ export default function SettingsContainer() {
       onRenameDevice={handleRenameDevice}
       onRemoveDevice={handleRemoveDevice}
       onExportData={handleExportData}
-      onImportData={handleImportData}
     />
   );
 }

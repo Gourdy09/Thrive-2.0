@@ -1,18 +1,19 @@
-export interface Recipe {
+export interface RecipeBase {
   id: string;
   title: string;
   imageUrl: string;
   ingredients: string[];
+  tags?: string[];
+  protein?: number;
+  carbs?: number;
+}
+
+export interface RecipeFull extends RecipeBase {
   instructions: string[];
   cT: string;
+  servingSize: string;
   protein: number;
   carbs: number;
-  fat?: number;
-  calories?: number;
-  tags: string[];
-  servingSize: string;
-  isBookmarked: boolean;
-  createdAt: Date;
 }
 
 export interface FoodLogEntry {
@@ -29,6 +30,6 @@ export interface FoodLogEntry {
   imageUrl?: string;
 }
 
-export interface SavedRecipe extends Recipe {
+export interface SavedRecipe extends RecipeFull {
   savedAt: Date;
 }

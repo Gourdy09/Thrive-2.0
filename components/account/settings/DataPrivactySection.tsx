@@ -1,16 +1,14 @@
 import { Colors } from "@/constants/Colors";
-import { ChevronRight, Download, ExternalLink, Lock, Upload } from "lucide-react-native";
+import { ChevronRight, Download, ExternalLink, Lock } from "lucide-react-native";
 import React from "react";
 import { Linking, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 
 interface DataPrivacySectionProps {
   onExportData: () => void;
-  onImportData: () => void;
 }
 
 export default function DataPrivacySection({
   onExportData,
-  onImportData,
 }: DataPrivacySectionProps) {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
@@ -45,11 +43,6 @@ export default function DataPrivacySection({
           icon={Download}
           label="Export Data"
           onPress={onExportData}
-        />
-        <DataPrivacyItem
-          icon={Upload}
-          label="Import Data"
-          onPress={onImportData}
         />
         <DataPrivacyItem
           icon={Lock}
