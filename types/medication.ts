@@ -1,4 +1,4 @@
-export type DayOfWeek = 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat';
+export type DayOfWeek = "Sun" | "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat";
 
 export interface MedicationAlarm {
   id: string;
@@ -25,26 +25,32 @@ export interface NextMedication {
 }
 
 // Time utilities
-export const convert24to12 = (time24: string): { hour: string; minute: string; period: 'AM' | 'PM' } => {
-  const [hours, minutes] = time24.split(':');
+export const convert24to12 = (
+  time24: string
+): { hour: string; minute: string; period: "AM" | "PM" } => {
+  const [hours, minutes] = time24.split(":");
   const hour = parseInt(hours);
-  const period: 'AM' | 'PM' = hour >= 12 ? 'PM' : 'AM';
+  const period: "AM" | "PM" = hour >= 12 ? "PM" : "AM";
   const hour12 = hour % 12 || 12;
   return {
-    hour: hour12.toString().padStart(2, '0'),
+    hour: hour12.toString().padStart(2, "0"),
     minute: minutes,
-    period
+    period,
   };
 };
 
-export const convert12to24 = (hour: string, minute: string, period: 'AM' | 'PM'): string => {
+export const convert12to24 = (
+  hour: string,
+  minute: string,
+  period: "AM" | "PM"
+): string => {
   let hour24 = parseInt(hour);
-  if (period === 'PM' && hour24 !== 12) {
+  if (period === "PM" && hour24 !== 12) {
     hour24 += 12;
-  } else if (period === 'AM' && hour24 === 12) {
+  } else if (period === "AM" && hour24 === 12) {
     hour24 = 0;
   }
-  return `${hour24.toString().padStart(2, '0')}:${minute}`;
+  return `${hour24.toString().padStart(2, "0")}:${minute}`;
 };
 
 export const formatTime12Hour = (time24: string): string => {
@@ -53,7 +59,7 @@ export const formatTime12Hour = (time24: string): string => {
 };
 
 export const getDayOfWeekIndex = (day: DayOfWeek): number => {
-  const days: DayOfWeek[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const days: DayOfWeek[] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   return days.indexOf(day);
 };
 
@@ -61,14 +67,14 @@ export const getDayLabel = (targetDate: Date): string => {
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  
+
   today.setHours(0, 0, 0, 0);
   tomorrow.setHours(0, 0, 0, 0);
   targetDate.setHours(0, 0, 0, 0);
-  
-  if (targetDate.getTime() === today.getTime()) return 'Today';
-  if (targetDate.getTime() === tomorrow.getTime()) return 'Tomorrow';
-  
-  const days: DayOfWeek[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  if (targetDate.getTime() === today.getTime()) return "Today";
+  if (targetDate.getTime() === tomorrow.getTime()) return "Tomorrow";
+
+  const days: DayOfWeek[] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   return days[targetDate.getDay()];
 };

@@ -1,7 +1,13 @@
 import { Colors } from "@/constants/Colors";
 import { convert12to24, convert24to12 } from "@/types/medication";
-import React, { useState } from "react";
-import { Text, TextInput, TouchableOpacity, useColorScheme, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
 
 interface TimeInputProps {
   value: string; // 24-hour format "HH:MM"
@@ -11,63 +17,59 @@ interface TimeInputProps {
 export default function TimeInput({ value, onChange }: TimeInputProps) {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
-  
+
   const { hour, minute, period } = convert24to12(value);
+
   const [hourInput, setHourInput] = useState(hour);
   const [minuteInput, setMinuteInput] = useState(minute);
-  const [currentPeriod, setCurrentPeriod] = useState<'AM' | 'PM'>(period);
+  const [currentPeriod, setCurrentPeriod] = useState<"AM" | "PM">(period);
 
-  const updateTime = (newHour: string, newMinute: string, newPeriod: 'AM' | 'PM') => {
-    const time24 = convert12to24(newHour, newMinute, newPeriod);
-    onChange(time24);
+  useEffect(() => {
+    const { hour, minute, period } = convert24to12(value);
+    setHourInput(hour);
+    setMinuteInput(minute);
+    setCurrentPeriod(period);
+  }, [value]);
+
+  // Updates the parent without formatting; only if valid numbers
+  const tryUpdateTime = (h: string, m: string, p: "AM" | "PM") => {
+    const hourNum = parseInt(h);
+    const minuteNum = parseInt(m);
+
+    if (
+      !isNaN(hourNum) &&
+      hourNum >= 1 &&
+      hourNum <= 12 &&
+      !isNaN(minuteNum) &&
+      minuteNum >= 0 &&
+      minuteNum <= 59
+    ) {
+      const time24 = convert12to24(h.padStart(2, "0"), m.padStart(2, "0"), p);
+      onChange(time24);
+    }
   };
 
   const handleHourChange = (text: string) => {
-    // Only allow digits
-    const cleaned = text.replace(/[^0-9]/g, '');
-    
-    if (cleaned === '') {
-      setHourInput('');
-      return;
-    }
-    
-    let hourNum = parseInt(cleaned);
-    
-    // Limit to 12
-    if (hourNum > 12) {
-      hourNum = 12;
-    }
-    
-    const formatted = hourNum.toString().padStart(2, '0');
-    setHourInput(formatted);
-    updateTime(formatted, minuteInput, currentPeriod);
+    // Only allow 0-9
+    const cleaned = text.replace(/[^0-9]/g, "");
+    if (cleaned.length > 2) return;
+    setHourInput(cleaned);
+
+    if (cleaned !== "") tryUpdateTime(cleaned, minuteInput, currentPeriod);
   };
 
   const handleMinuteChange = (text: string) => {
-    // Only allow digits
-    const cleaned = text.replace(/[^0-9]/g, '');
-    
-    if (cleaned === '') {
-      setMinuteInput('');
-      return;
-    }
-    
-    let minuteNum = parseInt(cleaned);
-    
-    // Limit to 59
-    if (minuteNum > 59) {
-      minuteNum = 59;
-    }
-    
-    const formatted = minuteNum.toString().padStart(2, '0');
-    setMinuteInput(formatted);
-    updateTime(hourInput, formatted, currentPeriod);
+    const cleaned = text.replace(/[^0-9]/g, "");
+    if (cleaned.length > 2) return; // max 2 digits
+    setMinuteInput(cleaned);
+
+    if (cleaned !== "") tryUpdateTime(hourInput, cleaned, currentPeriod);
   };
 
   const handlePeriodToggle = () => {
-    const newPeriod = currentPeriod === 'AM' ? 'PM' : 'AM';
+    const newPeriod = currentPeriod === "AM" ? "PM" : "AM";
     setCurrentPeriod(newPeriod);
-    updateTime(hourInput, minuteInput, newPeriod);
+    tryUpdateTime(hourInput, minuteInput, newPeriod);
   };
 
   return (
@@ -94,7 +96,9 @@ export default function TimeInput({ value, onChange }: TimeInputProps) {
         }}
       />
 
-      <Text style={{ color: theme.text, fontSize: 20, fontWeight: "700" }}>:</Text>
+      <Text style={{ color: theme.text, fontSize: 20, fontWeight: "700" }}>
+        :
+      </Text>
 
       {/* Minute Input */}
       <TextInput
