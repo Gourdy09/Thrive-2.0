@@ -1,4 +1,5 @@
-// app/(tabs)/food/foodScreen.tsx - UPDATED
+// app/(tabs)/food/foodScreen.tsx - UPDATED with infinite scroll
+import FilterChips, { RecipeFilters } from "@/components/food/FilterChips";
 import RecipeCard from "@/components/food/RecipeCard";
 import { RecipeSkeletonGrid } from "@/components/food/RecipeCardSkeleton";
 import Header from "@/components/Header";
@@ -20,6 +21,8 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   ScrollView,
   StyleSheet,
   Text,
@@ -135,20 +138,25 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
   const [foodLogCount, setFoodLogCount] = useState(0);
   const [showSavedRecipes, setShowSavedRecipes] = useState(false);
   const [customRecipes, setCustomRecipes] = useState<RecipeData[]>([]);
+  const [scrollOffset, setScrollOffset] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [filters, setFilters] = useState<RecipeFilters>({
+    cuisines: [],
+    maxCookTime: undefined,
+    difficulty: undefined,
+    mealType: undefined,
+  });
 
   const { user } = useAuth();
   const username1 = user?.email?.split("@")[0] || "User";
 
   // Use the new recipe scraper hook
-  const { recipes, loading, error, refreshRecipes, userPreferences } = useRecipeScraper();
+  const { recipes, loading, error, refreshRecipes, userPreferences, cycleRecipes } = useRecipeScraper();
 
   useEffect(() => {
     loadBookmarkedRecipes();
     loadFoodLogCount();
     loadCustomRecipes();
-
-    // Initial recipe load
-    refreshRecipes("healthy diabetic-friendly recipes");
 
     const interval = setInterval(loadFoodLogCount, 3000);
     return () => clearInterval(interval);
@@ -218,10 +226,26 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
     setIsPopUpVisible(true);
   };
 
-  const handleCameraPress = () => router.push("./cameraScreen");
-  const handleFoodLog = () => router.push("./foodLogScreen");
-  const handleManualEntry = () => router.push("./manualEntryScreen");
-  const handleInsights = () => router.push("./nutritionInsights");
+  const handleCameraPress = () => router.push("/(tabs)/food/cameraScreen");
+  const handleFoodLog = () => router.push("/(tabs)/food/foodLogScreen");
+  const handleManualEntry = () => router.push("/(tabs)/food/manualEntryScreen");
+  const handleInsights = () => router.push("/(tabs)/food/nutritionInsights");
+
+  const handleFiltersChange = (newFilters: RecipeFilters) => {
+    setFilters(newFilters);
+    refreshRecipes("healthy recipes", newFilters);
+  };
+
+  const handleClearFilters = () => {
+    const emptyFilters = {
+      cuisines: [],
+      maxCookTime: undefined,
+      difficulty: undefined,
+      mealType: undefined,
+    };
+    setFilters(emptyFilters);
+    refreshRecipes("healthy recipes", emptyFilters);
+  };
 
   // Combine custom recipes with fetched recipes
   const allRecipes = [...customRecipes, ...recipes];
@@ -229,6 +253,21 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
   const savedRecipes = allRecipes.filter((recipe) =>
     bookmarkedRecipes.includes(recipe.id)
   );
+
+  // Handle scroll for infinite scrolling effect
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+    const scrollPosition = contentOffset.x;
+    const scrollWidth = contentSize.width;
+    const viewWidth = layoutMeasurement.width;
+
+    // When user scrolls near the end, cycle recipes
+    if (scrollPosition + viewWidth >= scrollWidth - 100) {
+      cycleRecipes();
+    }
+
+    setScrollOffset(scrollPosition);
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -311,6 +350,35 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
           </View>
         )}
 
+        {/* API Quota Exceeded Warning */}
+        {error && error.includes("quota") && (
+          <View
+            style={{
+              backgroundColor: "#FFA500" + "20",
+              borderWidth: 1,
+              borderColor: "#FFA500" + "40",
+              borderRadius: 12,
+              padding: 12,
+              marginHorizontal: 10,
+              marginBottom: 24,
+            }}
+          >
+            <Text style={{ color: "#FFA500", fontSize: 13, fontWeight: "600", marginBottom: 4 }}>
+              📦 Using Cached Recipes
+            </Text>
+            <Text style={{ color: theme.text, fontSize: 12 }}>
+              API quota exceeded. Showing recipes from your cache. Quota resets daily.
+            </Text>
+          </View>
+        )}
+
+        {/* Filter Chips */}
+        <FilterChips
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onClear={handleClearFilters}
+        />
+
         {/* Custom Recipes Section */}
         {customRecipes.length > 0 && (
           <View style={styles.section}>
@@ -363,7 +431,7 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
           </Text>
         </TouchableOpacity>
 
-        {/* For You Section - Web Scraped Recipes */}
+        {/* For You Section - Spoonacular Recipes with Infinite Scroll */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
@@ -372,18 +440,18 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
               </Text>
               <Zap size={20} color={theme.tint} />
             </View>
-            <TouchableOpacity onPress={() => refreshRecipes()}>
+            <TouchableOpacity onPress={() => refreshRecipes("healthy recipes", filters)}>
               <RefreshCw size={20} color={theme.tint} />
             </TouchableOpacity>
           </View>
 
-          {loading ? (
+          {loading && recipes.length === 0 ? (
             <RecipeSkeletonGrid />
           ) : error ? (
             <View style={styles.loadingContainer}>
               <Text style={{ color: theme.text }}>Error: {error}</Text>
               <TouchableOpacity
-                onPress={() => refreshRecipes()}
+                onPress={() => refreshRecipes("healthy recipes", filters)}
                 style={{
                   backgroundColor: theme.tint,
                   padding: 12,
@@ -398,19 +466,21 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
             </View>
           ) : (
             <ScrollView
+              ref={scrollViewRef}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.recipesScroll}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
             >
-              {recipes.map((recipe) => (
+              {recipes.map((recipe, index) => (
                 <RecipeCard
-                  key={recipe.id}
+                  key={`${recipe.id}-${index}`}
                   recipe={recipe}
                   isBookmarked={bookmarkedRecipes.includes(recipe.id)}
                   onPress={handleRecipePress}
                   onToggleBookmark={toggleBookmark}
                 />
-
               ))}
             </ScrollView>
           )}

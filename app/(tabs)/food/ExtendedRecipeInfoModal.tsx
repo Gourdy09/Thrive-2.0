@@ -163,19 +163,6 @@ const Popup: React.FC<PopUpProps> = ({
                 resizeMode="cover"
               />
 
-              {/* Gradient Overlay */}
-              <View
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 100,
-                  backgroundColor:
-                    "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
-                }}
-              />
-
               {/* Close Button */}
               <TouchableOpacity
                 onPress={onClose}
@@ -453,10 +440,10 @@ const Popup: React.FC<PopUpProps> = ({
                         style={{
                           backgroundColor: theme.tint + "20",
                           borderWidth: 1,
-                          borderColor: theme.tint + "40",
+                          borderColor: theme.icon,
                           paddingHorizontal: 12,
                           paddingVertical: 6,
-                          borderRadius: 12,
+                          borderRadius: 9,
                         }}
                       >
                         <Text

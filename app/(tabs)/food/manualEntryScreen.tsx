@@ -62,7 +62,7 @@ export default function ManualEntryScreen() {
     };
 
     console.log("Saving:", data);
-    // TODO: Add save logic to Supabase
+    // TODO: Add save logic to local
 
     Alert.alert("Success", "Recipe saved successfully!", [
       {

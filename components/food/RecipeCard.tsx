@@ -1,5 +1,4 @@
 import { Colors } from "@/constants/Colors";
-import { RecipeBase } from "@/types/food";
 import { Bookmark } from "lucide-react-native";
 import React from "react";
 import {
@@ -9,6 +8,21 @@ import {
   View,
   useColorScheme,
 } from "react-native";
+
+interface RecipeBase {
+  id: string;
+  title: string;
+  imageUrl: string;
+  ingredients: string[];
+  tags?: string[];
+  nutrition?: {
+    protein: number;
+    carbs: number;
+    fat?: number;
+    calories?: number;
+    fiber?: number;
+  };
+}
 
 interface RecipeCardProps {
   recipe: RecipeBase;
@@ -24,12 +38,25 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   onToggleBookmark,
 }) => {
   const theme = Colors[useColorScheme() ?? "dark"];
-  const { id, title, imageUrl, protein = 0, carbs = 0, tags = [] } = recipe;
+  const { id, title, imageUrl, nutrition, tags = [] } = recipe;
 
+  // Build chips from nutrition and tags
   const chips: string[] = [];
-  if (protein >= 20) chips.push("High Protein");
-  if (carbs <= 15) chips.push("Low Carb");
+  
+  if (nutrition) {
+    if (nutrition.protein >= 20) chips.push("High Protein");
+    if (nutrition.carbs <= 15) chips.push("Low Carb");
+    if (nutrition.calories && nutrition.calories <= 300) chips.push("Low Cal");
+  }
+  
+  // Add dietary tags
   if (tags.includes("Vegetarian")) chips.push("Vegetarian");
+  if (tags.includes("Vegan")) chips.push("Vegan");
+  if (tags.includes("Gluten-free")) chips.push("Gluten-free");
+  if (tags.includes("Quick")) chips.push("Quick");
+
+  // Limit to 3 chips
+  const displayChips = chips.slice(0, 3);
 
   return (
     <View
@@ -38,6 +65,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
         marginRight: 16,
         borderRadius: 14,
         backgroundColor: theme.cardBackground,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
       }}
     >
       <TouchableOpacity onPress={() => onPress(id)}>
@@ -61,6 +93,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
           backgroundColor: "white",
           padding: 6,
           borderRadius: 20,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.2,
+          shadowRadius: 2,
+          elevation: 2,
         }}
       >
         <Bookmark
@@ -72,6 +109,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
 
       <View style={{ padding: 12 }}>
         <Text
+          numberOfLines={2}
           style={{
             fontSize: 16,
             fontWeight: "700",
@@ -82,19 +120,39 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
           {title}
         </Text>
 
-        {chips.length > 0 && (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-            {chips.map((chip) => (
+        {/* Nutrition Quick Stats */}
+        {nutrition && (
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 12,
+              marginBottom: 8,
+            }}
+          >
+            <Text style={{ fontSize: 12, color: theme.icon }}>
+              {nutrition.calories || 0} cal
+            </Text>
+            <Text style={{ fontSize: 12, color: theme.icon }}>
+              {nutrition.protein}g protein
+            </Text>
+          </View>
+        )}
+
+        {displayChips.length > 0 && (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+            {displayChips.map((chip) => (
               <View
                 key={chip}
                 style={{
                   backgroundColor: theme.tint + "30",
                   paddingHorizontal: 8,
                   paddingVertical: 4,
-                  borderRadius: 12,
+                  borderRadius: 9,
+                  borderColor: theme.icon,
+                  borderWidth: 1
                 }}
               >
-                <Text style={{ fontSize: 11, color: theme.tint }}>
+                <Text style={{ fontSize: 11, color: theme.tint, fontWeight: "600" }}>
                   {chip}
                 </Text>
               </View>
@@ -105,7 +163,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
         <TouchableOpacity
           onPress={() => onPress(id)}
           style={{
-            marginTop: 12,
             backgroundColor: theme.tint,
             paddingVertical: 10,
             borderRadius: 8,

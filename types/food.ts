@@ -4,16 +4,24 @@ export interface RecipeBase {
   imageUrl: string;
   ingredients: string[];
   tags?: string[];
-  protein?: number;
-  carbs?: number;
+  nutrition?: {
+    protein: number;
+    carbs: number;
+    fat?: number;
+    calories?: number;
+    fiber?: number;
+  };
 }
 
 export interface RecipeFull extends RecipeBase {
   instructions: string[];
-  cT: string;
-  servingSize: string;
-  protein: number;
-  carbs: number;
+  cookingTime: string;
+  prepTime: string;
+  totalTime: string;
+  servings: string;
+  difficulty?: string;
+  cuisine?: string;
+  cachedAt?: number;
 }
 
 export interface FoodLogEntry {
