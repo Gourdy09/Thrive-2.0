@@ -1,4 +1,3 @@
-// app/(tabs)/food/extendedRecipeInfoModal.tsx - UPDATED
 import { Colors } from "@/constants/Colors";
 import {
   Bookmark,
@@ -108,11 +107,23 @@ const Popup: React.FC<PopUpProps> = ({
         imageUrl: selectedRecipe.imageUrl,
       };
 
+      console.log("Adding entry to food log:", logEntry);
+
+      // Load and update daily food log
       const stored = await AsyncStorage.getItem("foodLog");
       const currentLog = stored ? JSON.parse(stored) : [];
       const updatedLog = [logEntry, ...currentLog];
-
       await AsyncStorage.setItem("foodLog", JSON.stringify(updatedLog));
+      
+      console.log("Daily food log updated. Total entries:", updatedLog.length);
+
+      // Load and update weekly insights data
+      const weeklyStored = await AsyncStorage.getItem("weeklyInsightsData");
+      const weeklyData = weeklyStored ? JSON.parse(weeklyStored) : [];
+      const updatedWeeklyData = [logEntry, ...weeklyData];
+      await AsyncStorage.setItem("weeklyInsightsData", JSON.stringify(updatedWeeklyData));
+      
+      console.log("Weekly insights updated. Total entries:", updatedWeeklyData.length);
 
       Alert.alert(
         "Added to Food Log",

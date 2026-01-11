@@ -1,7 +1,9 @@
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFoodLogCleanup } from "@/hooks/useFoodLogCleanup";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
@@ -14,7 +16,7 @@ import {
   Sunset,
   Trash2,
 } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -24,6 +26,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+
 interface FoodLogEntry {
   id: string;
   recipeId?: string;
@@ -43,29 +46,49 @@ export default function FoodLogScreen() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
   const [foodLog, setFoodLog] = useState<FoodLogEntry[]>([]);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate] = useState(new Date());
 
   const { user } = useAuth();
   const username = user?.email?.split("@")[0] || "User";
-  useEffect(() => {
-    loadFoodLog();
-  }, [selectedDate]);
+  
+  // Use the cleanup hook
+  useFoodLogCleanup();
 
   const loadFoodLog = async () => {
     try {
-      // TODO: Load from AsyncStorage or Supabase
       const stored = await AsyncStorage.getItem("foodLog");
       if (stored) {
         const parsed = JSON.parse(stored).map((entry: any) => ({
           ...entry,
           timestamp: new Date(entry.timestamp),
         }));
-        setFoodLog(parsed);
+        
+        // Filter for today's entries only
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayEntries = parsed.filter((entry: FoodLogEntry) => {
+          const entryDate = new Date(entry.timestamp);
+          entryDate.setHours(0, 0, 0, 0);
+          return entryDate.getTime() === today.getTime();
+        });
+        
+        setFoodLog(todayEntries);
       }
     } catch (error) {
       console.error("Error loading food log:", error);
     }
   };
+
+  useEffect(() => {
+    loadFoodLog();
+  }, [selectedDate]);
+
+  // Reload when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadFoodLog();
+    }, [])
+  );
 
   const saveFoodLog = async (log: FoodLogEntry[]) => {
     try {
@@ -84,28 +107,15 @@ export default function FoodLogScreen() {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
+          onPress: async () => {
             const newLog = foodLog.filter((entry) => entry.id !== id);
             setFoodLog(newLog);
-            saveFoodLog(newLog);
+            await saveFoodLog(newLog);
           },
         },
       ]
     );
   };
-
-  const clearOldEntries = async () => {
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-
-    const newLog = foodLog.filter((entry) => entry.timestamp > threeDaysAgo);
-    setFoodLog(newLog);
-    await saveFoodLog(newLog);
-  };
-
-  useEffect(() => {
-    clearOldEntries();
-  }, []);
 
   const getMealIcon = (mealType: string) => {
     switch (mealType) {
@@ -138,11 +148,6 @@ export default function FoodLogScreen() {
   };
 
   const groupByMealType = () => {
-    const todayEntries = foodLog.filter((entry) => {
-      const entryDate = new Date(entry.timestamp);
-      return entryDate.toDateString() === selectedDate.toDateString();
-    });
-
     const grouped: { [key: string]: FoodLogEntry[] } = {
       breakfast: [],
       lunch: [],
@@ -150,7 +155,7 @@ export default function FoodLogScreen() {
       snack: [],
     };
 
-    todayEntries.forEach((entry) => {
+    foodLog.forEach((entry) => {
       grouped[entry.mealType].push(entry);
     });
 
@@ -158,12 +163,7 @@ export default function FoodLogScreen() {
   };
 
   const getTotalNutrition = () => {
-    const todayEntries = foodLog.filter((entry) => {
-      const entryDate = new Date(entry.timestamp);
-      return entryDate.toDateString() === selectedDate.toDateString();
-    });
-
-    return todayEntries.reduce(
+    return foodLog.reduce(
       (acc, entry) => ({
         protein: acc.protein + (entry.nutrition.protein || 0),
         carbs: acc.carbs + (entry.nutrition.carbs || 0),
@@ -243,7 +243,7 @@ export default function FoodLogScreen() {
               marginLeft: 8,
             }}
           >
-            Today's Nutrition
+            Today's Nutrition • Resets Daily
           </Text>
         </View>
 
@@ -255,7 +255,7 @@ export default function FoodLogScreen() {
             <Text
               style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}
             >
-              {totalNutrition.protein}g
+              {Math.round(totalNutrition.protein)}g
             </Text>
           </View>
           <View style={{ alignItems: "center" }}>
@@ -265,7 +265,7 @@ export default function FoodLogScreen() {
             <Text
               style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}
             >
-              {totalNutrition.carbs}g
+              {Math.round(totalNutrition.carbs)}g
             </Text>
           </View>
           <View style={{ alignItems: "center" }}>
@@ -275,7 +275,7 @@ export default function FoodLogScreen() {
             <Text
               style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}
             >
-              {totalNutrition.calories || 0}
+              {Math.round(totalNutrition.calories || 0)}
             </Text>
           </View>
         </View>
@@ -368,10 +368,10 @@ export default function FoodLogScreen() {
                         </View>
                         <View style={{ flexDirection: "row", gap: 16 }}>
                           <Text style={{ fontSize: 12, color: theme.icon }}>
-                            Protein: {entry.nutrition.protein}g
+                            Protein: {Math.round(entry.nutrition.protein)}g
                           </Text>
                           <Text style={{ fontSize: 12, color: theme.icon }}>
-                            Carbs: {entry.nutrition.carbs}g
+                            Carbs: {Math.round(entry.nutrition.carbs)}g
                           </Text>
                         </View>
                       </View>
