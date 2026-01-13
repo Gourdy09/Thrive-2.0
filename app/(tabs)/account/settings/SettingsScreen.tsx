@@ -1,5 +1,5 @@
 import AccountSection from "@/components/account/settings/AccountSection";
-import DataPrivacySection from "@/components/account/settings/DataPrivactySection";
+import DataPrivacySection from "@/components/account/settings/DataPrivacySection";
 import DevicesSection from "@/components/account/settings/DevicesSection";
 import AddDeviceModal from "@/components/account/settings/modals/AddDeviceModal";
 import ChangeEmailModal from "@/components/account/settings/modals/ChangeEmailModal";
@@ -69,7 +69,6 @@ interface SettingsScreenProps {
   onSetActiveDevice: (deviceId: string) => void;
   onRenameDevice: (deviceId: string, newName: string) => void;
   onRemoveDevice: (deviceId: string) => void;
-  onExportData: () => void;
 }
 
 export default function SettingsScreen(props: SettingsScreenProps) {
@@ -190,9 +189,7 @@ export default function SettingsScreen(props: SettingsScreenProps) {
         />
 
         {/* Data & Privacy Section */}
-        <DataPrivacySection
-          onExportData={props.onExportData}
-        />
+        <DataPrivacySection/>
       </ScrollView>
 
       {/* Modals */}

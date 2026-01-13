@@ -571,17 +571,6 @@ export default function SettingsContainer() {
     setSettings({ ...settings, connectedDevices: newDevices });
   };
 
-  //
-
-  // Data & Privacy
-  const handleExportData = async () => {
-    try {
-      // TODO: Implement data export
-      console.log("Exporting data...");
-    } catch (error) {
-      console.error("Error exporting data:", error);
-    }
-  };
 
   return (
     <SettingsScreen
@@ -622,7 +611,6 @@ export default function SettingsContainer() {
       onSetActiveDevice={handleSetActiveDevice}
       onRenameDevice={handleRenameDevice}
       onRemoveDevice={handleRemoveDevice}
-      onExportData={handleExportData}
     />
   );
 }

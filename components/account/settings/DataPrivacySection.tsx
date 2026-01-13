@@ -1,17 +1,23 @@
 import { Colors } from "@/constants/Colors";
+import { exportUserData } from "@/utils/exportUserData";
 import { ChevronRight, Download, ExternalLink, Lock } from "lucide-react-native";
-import React from "react";
-import { Linking, Text, TouchableOpacity, useColorScheme, View } from "react-native";
+import React, { useState } from "react";
+import { ActivityIndicator, Linking, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 
-interface DataPrivacySectionProps {
-  onExportData: () => void;
-}
-
-export default function DataPrivacySection({
-  onExportData,
-}: DataPrivacySectionProps) {
+export default function DataPrivacySection() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportData = async () => {
+    setIsExporting(true);
+    try {
+      // Export with default 1MB storage limit (change num insde parenthesis for more space ex. 2 = 2MB)
+      await exportUserData();
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handlePermissions = () => {
     // TODO: Navigate to permissions screen or open system settings
@@ -42,7 +48,8 @@ export default function DataPrivacySection({
         <DataPrivacyItem
           icon={Download}
           label="Export Data"
-          onPress={onExportData}
+          onPress={handleExportData}
+          isLoading={isExporting}
         />
         <DataPrivacyItem
           icon={Lock}
@@ -65,11 +72,13 @@ function DataPrivacyItem({
   label,
   onPress,
   isExternal = false,
+  isLoading = false,
 }: {
   icon: React.ElementType;
   label: string;
   onPress: () => void;
   isExternal?: boolean;
+  isLoading?: boolean;
 }) {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
@@ -77,12 +86,14 @@ function DataPrivacyItem({
   return (
     <TouchableOpacity
       onPress={onPress}
+      disabled={isLoading}
       style={{
         flexDirection: "row",
         alignItems: "center",
         paddingVertical: 16,
         borderBottomWidth: 1,
         borderColor: colorScheme === "dark" ? "#2A2D2F" : "#E2E4E7",
+        opacity: isLoading ? 0.6 : 1,
       }}
     >
       <Icon color={theme.icon} size={20} />
@@ -96,7 +107,9 @@ function DataPrivacyItem({
       >
         {label}
       </Text>
-      {isExternal ? (
+      {isLoading ? (
+        <ActivityIndicator size="small" color={theme.icon} />
+      ) : isExternal ? (
         <ExternalLink color={theme.icon} size={18} />
       ) : (
         <ChevronRight color={theme.icon} size={20} />
