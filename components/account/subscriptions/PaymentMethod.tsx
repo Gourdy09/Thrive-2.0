@@ -10,7 +10,7 @@ export interface PaymentMethodData {
   brand?: string;
   bankName?: string;
   isDefault: boolean;
-  supportedMethods: string[];
+
 }
 
 export interface PaymentMethodProps {

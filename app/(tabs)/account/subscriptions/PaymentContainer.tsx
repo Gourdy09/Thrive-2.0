@@ -35,7 +35,6 @@ export default function PaymentContainer() {
           lastFour: "4167",
           brand: "Visa",
           isDefault: true,
-          supportedMethods: ["card"],
         },
         {
           id: "2",
@@ -43,18 +42,16 @@ export default function PaymentContainer() {
           lastFour: "8832",
           brand: "Mastercard",
           isDefault: false,
-          supportedMethods: ["card"],
         },
       ];
       const dataToUse: PaymentMethodData[] =
         paymentMethodData && paymentMethodData.length > 0
           ? paymentMethodData.map((m: any) => ({
               id: m.id.toString(),
-              type: m.type,
-              lastFour: m.last_four,
+              type: m.method_type,
+              lastFour: m.last_Four,
               brand: m.brand,
               isDefault: m.is_default,
-              supportedMethods: m.supported_methods || ["card"],
             }))
           : mockData;
       setPaymentMethods(dataToUse);
@@ -67,7 +64,6 @@ export default function PaymentContainer() {
           lastFour: "4167",
           brand: "Visa",
           isDefault: true,
-          supportedMethods: ["card"],
         },
         {
           id: "2",
@@ -75,7 +71,6 @@ export default function PaymentContainer() {
           lastFour: "8832",
           brand: "Mastercard",
           isDefault: false,
-          supportedMethods: ["card"],
         },
       ]);
     } finally {
@@ -117,7 +112,6 @@ export default function PaymentContainer() {
         lastFour: data.last_Four,
         bankName: data.bankname,
         isDefault: data.is_default,
-        supportedMethods: ["card"],
       };
 
       setPaymentMethods((prev) => sortPaymentMethods([...prev, newMethod]));
@@ -133,23 +127,19 @@ export default function PaymentContainer() {
     if (!user?.id) return;
     console.log("Container: Setting default payment method", id);
     try {
-      const { error: resetError } = await supabase
-        .from("payment")
-        .update({ is_default: false })
-        .eq("user_id", user.id);
+      const { error } = await supabase.rpc("set_default_payment", {
+        payment_id: id,
+      });
+      if (error) throw error;
 
-      if (resetError) throw resetError;
-
-      const { data, error } = await supabase
-        .from("payment")
-        .update({ default: true })
-        .eq("id", id);
-
-      const updatedMethods = paymentMethods.map((m) => ({
-        ...m,
-        isDefault: m.id === id,
-      }));
-      setPaymentMethods(sortPaymentMethods(updatedMethods));
+      setPaymentMethods((prev) =>
+        sortPaymentMethods(
+          prev.map((m) => ({
+            ...m,
+            isDefault: m.id === id,
+          }))
+        )
+      );
     } catch (error) {
       console.error("Error setting as default:", error);
       Alert.alert("Error", "Failed to set as default method");
