@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { ArrowLeft, CheckCircle2 } from "lucide-react-native";
 import React, { useState } from "react";
@@ -15,6 +16,7 @@ import {
   View,
   useColorScheme,
 } from "react-native";
+
 interface ManualEntryData {
   recipeName: string;
   ingredients: string[];
@@ -40,7 +42,8 @@ export default function ManualEntryScreen() {
 
   const { user } = useAuth();
   const username = user?.email?.split("@")[0] || "User";
-  const handleSave = () => {
+
+  const handleSave = async () => {
     if (!isFormValid) {
       Alert.alert(
         "Error",
@@ -62,14 +65,58 @@ export default function ManualEntryScreen() {
     };
 
     console.log("Saving:", data);
-    // TODO: Add save logic to local
 
-    Alert.alert("Success", "Recipe saved successfully!", [
-      {
-        text: "OK",
-        onPress: () => router.back(),
-      },
-    ]);
+    try {
+      // Create the recipe object with full structure matching RecipeCard expectations
+      const newRecipe = {
+        id: `custom-${Date.now()}`,
+        title: data.recipeName,
+        imageUrl: "https://via.placeholder.com/280x160/4ECDC4/FFFFFF?text=Custom+Recipe", // Placeholder image
+        ingredients: data.ingredients,
+        instructions: data.instructions,
+        cookingTime: data.completionTime ? `${data.completionTime} min` : "N/A",
+        prepTime: "N/A",
+        totalTime: data.completionTime ? `${data.completionTime} min` : "N/A",
+        servings: "1 serving",
+        nutrition: {
+          protein: data.protein,
+          carbs: data.carbs,
+          fat: 0,
+          calories: 0,
+          fiber: 0,
+        },
+        tags: ["Custom"],
+        difficulty: "Easy",
+        cuisine: "Custom",
+        isBookmarked: false,
+        isCustom: true,
+      };
+
+      // Load existing custom recipes
+      const stored = await AsyncStorage.getItem("customRecipes");
+      const currentRecipes = stored ? JSON.parse(stored) : [];
+
+      // Add new recipe to the list
+      const updatedRecipes = [...currentRecipes, newRecipe];
+
+      // Save back to AsyncStorage
+      await AsyncStorage.setItem(
+        "customRecipes",
+        JSON.stringify(updatedRecipes)
+      );
+
+      console.log("Recipe saved successfully:", newRecipe);
+
+      Alert.alert("Success", "Recipe saved successfully!", [
+        {
+          text: "OK",
+          onPress: () => router.back(),
+        },
+      ]);
+    } catch (error) {
+      console.error("Error saving recipe:", error);
+      Alert.alert("Error", "Failed to save recipe. Please try again.");
+    }
   };
 
   return (

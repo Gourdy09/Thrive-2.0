@@ -318,7 +318,7 @@ export default function YouSection({
               marginBottom: 12,
             }}
           >
-            First and Last Name
+            Name
           </Text>
           <TextInput
             value={name}

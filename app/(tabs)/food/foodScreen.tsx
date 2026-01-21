@@ -1,4 +1,5 @@
-// app/(tabs)/food/foodScreen.tsx - UPDATED with infinite scroll
+// app/(tabs)/food/foodScreen.tsx - FIXED INFINITE SCROLL
+
 import FilterChips, { RecipeFilters } from "@/components/food/FilterChips";
 import RecipeCard from "@/components/food/RecipeCard";
 import { RecipeSkeletonGrid } from "@/components/food/RecipeCardSkeleton";
@@ -15,10 +16,11 @@ import {
   RefreshCw,
   Sparkles,
   TrendingUp,
-  Zap,
+  Zap
 } from "lucide-react-native";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   NativeScrollEvent,
@@ -138,8 +140,13 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
   const [foodLogCount, setFoodLogCount] = useState(0);
   const [showSavedRecipes, setShowSavedRecipes] = useState(false);
   const [customRecipes, setCustomRecipes] = useState<RecipeData[]>([]);
-  const [scrollOffset, setScrollOffset] = useState(0);
+  
+  // Infinite scroll state
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const lastScrollX = useRef(0);
+  const loadMoreTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
   const [filters, setFilters] = useState<RecipeFilters>({
     cuisines: [],
     maxCookTime: undefined,
@@ -150,7 +157,6 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
   const { user } = useAuth();
   const username1 = user?.email?.split("@")[0] || "User";
 
-  // Use the new recipe scraper hook
   const { recipes, loading, error, refreshRecipes, userPreferences, cycleRecipes } = useRecipeScraper();
 
   useEffect(() => {
@@ -159,7 +165,12 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
     loadCustomRecipes();
 
     const interval = setInterval(loadFoodLogCount, 3000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (loadMoreTimeoutRef.current) {
+        clearTimeout(loadMoreTimeoutRef.current);
+      }
+    };
   }, []);
 
   const loadBookmarkedRecipes = async () => {
@@ -247,27 +258,79 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
     refreshRecipes("healthy recipes", emptyFilters);
   };
 
+  // Improved load more with debouncing
+  const loadMoreRecipes = useCallback(() => {
+    // Clear any existing timeout
+    if (loadMoreTimeoutRef.current) {
+      clearTimeout(loadMoreTimeoutRef.current);
+    }
+
+    // Don't load if already loading
+    if (isLoadingMore || loading) {
+      return;
+    }
+
+    // Debounce the load more call
+    loadMoreTimeoutRef.current = setTimeout(async () => {
+      setIsLoadingMore(true);
+      try {
+        await cycleRecipes();
+      } catch (error) {
+        console.error("Error loading more recipes:", error);
+      } finally {
+        setIsLoadingMore(false);
+      }
+    }, 500); // 500ms debounce
+  }, [cycleRecipes, isLoadingMore, loading]);
+
+  // Track scroll position and trigger load more
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+      const currentScrollX = contentOffset.x;
+      const scrollWidth = contentSize.width;
+      const viewWidth = layoutMeasurement.width;
+
+      // Only trigger if scrolling forward (to the right)
+      const isScrollingForward = currentScrollX > lastScrollX.current;
+      lastScrollX.current = currentScrollX;
+
+      // Calculate distance from end
+      const distanceFromEnd = scrollWidth - (currentScrollX + viewWidth);
+      
+      // Only load more if:
+      // 1. Scrolling forward
+      // 2. Within 300px of end
+      // 3. Not already loading
+      const LOAD_MORE_THRESHOLD = 300;
+      
+      if (
+        isScrollingForward && 
+        distanceFromEnd < LOAD_MORE_THRESHOLD && 
+        !isLoadingMore && 
+        !loading
+      ) {
+        loadMoreRecipes();
+      }
+    },
+    [loadMoreRecipes, isLoadingMore, loading]
+  );
+
+  // Handle scroll end to ensure we don't get stuck
+  const handleScrollEndDrag = useCallback(() => {
+    // Clear the timeout when user stops dragging
+    if (loadMoreTimeoutRef.current) {
+      clearTimeout(loadMoreTimeoutRef.current);
+      loadMoreTimeoutRef.current = null;
+    }
+  }, []);
+
   // Combine custom recipes with fetched recipes
   const allRecipes = [...customRecipes, ...recipes];
 
   const savedRecipes = allRecipes.filter((recipe) =>
     bookmarkedRecipes.includes(recipe.id)
   );
-
-  // Handle scroll for infinite scrolling effect
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
-    const scrollPosition = contentOffset.x;
-    const scrollWidth = contentSize.width;
-    const viewWidth = layoutMeasurement.width;
-
-    // When user scrolls near the end, cycle recipes
-    if (scrollPosition + viewWidth >= scrollWidth - 100) {
-      cycleRecipes();
-    }
-
-    setScrollOffset(scrollPosition);
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -350,28 +413,6 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
           </View>
         )}
 
-        {/* API Quota Exceeded Warning */}
-        {error && error.includes("quota") && (
-          <View
-            style={{
-              backgroundColor: "#FFA500" + "20",
-              borderWidth: 1,
-              borderColor: "#FFA500" + "40",
-              borderRadius: 12,
-              padding: 12,
-              marginHorizontal: 10,
-              marginBottom: 24,
-            }}
-          >
-            <Text style={{ color: "#FFA500", fontSize: 13, fontWeight: "600", marginBottom: 4 }}>
-              📦 Using Cached Recipes
-            </Text>
-            <Text style={{ color: theme.text, fontSize: 12 }}>
-              API quota exceeded. Showing recipes from your cache. Quota resets daily.
-            </Text>
-          </View>
-        )}
-
         {/* Filter Chips */}
         <FilterChips
           filters={filters}
@@ -431,7 +472,7 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
           </Text>
         </TouchableOpacity>
 
-        {/* For You Section - Spoonacular Recipes with Infinite Scroll */}
+        {/* For You Section - Infinite Scroll */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
@@ -440,16 +481,24 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
               </Text>
               <Zap size={20} color={theme.tint} />
             </View>
-            <TouchableOpacity onPress={() => refreshRecipes("healthy recipes", filters)}>
-              <RefreshCw size={20} color={theme.tint} />
+            <TouchableOpacity 
+              onPress={() => refreshRecipes("healthy recipes", filters)}
+              disabled={loading}
+            >
+              <RefreshCw 
+                size={20} 
+                color={loading ? theme.icon : theme.tint}
+              />
             </TouchableOpacity>
           </View>
 
           {loading && recipes.length === 0 ? (
             <RecipeSkeletonGrid />
-          ) : error ? (
+          ) : error && !error.includes("quota") ? (
             <View style={styles.loadingContainer}>
-              <Text style={{ color: theme.text }}>Error: {error}</Text>
+              <Text style={{ color: theme.text, textAlign: 'center', marginBottom: 8 }}>
+                Error: {error}
+              </Text>
               <TouchableOpacity
                 onPress={() => refreshRecipes("healthy recipes", filters)}
                 style={{
@@ -465,24 +514,37 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
               </TouchableOpacity>
             </View>
           ) : (
-            <ScrollView
-              ref={scrollViewRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.recipesScroll}
-              onScroll={handleScroll}
-              scrollEventThrottle={16}
-            >
-              {recipes.map((recipe, index) => (
-                <RecipeCard
-                  key={`${recipe.id}-${index}`}
-                  recipe={recipe}
-                  isBookmarked={bookmarkedRecipes.includes(recipe.id)}
-                  onPress={handleRecipePress}
-                  onToggleBookmark={toggleBookmark}
-                />
-              ))}
-            </ScrollView>
+            <View>
+              <ScrollView
+                ref={scrollViewRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.recipesScroll}
+                onScroll={handleScroll}
+                onScrollEndDrag={handleScrollEndDrag}
+                scrollEventThrottle={400}
+              >
+                {recipes.map((recipe, index) => (
+                  <RecipeCard
+                    key={`${recipe.id}-${index}`}
+                    recipe={recipe}
+                    isBookmarked={bookmarkedRecipes.includes(recipe.id)}
+                    onPress={handleRecipePress}
+                    onToggleBookmark={toggleBookmark}
+                  />
+                ))}
+                
+                {/* Loading indicator at the end */}
+                {isLoadingMore && (
+                  <View style={styles.loadingMoreContainer}>
+                    <ActivityIndicator size="large" color={theme.tint} />
+                    <Text style={[styles.loadingMoreText, { color: theme.icon }]}>
+                      Loading more...
+                    </Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
           )}
         </View>
 
@@ -663,6 +725,19 @@ const styles = StyleSheet.create({
     height: 200,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  loadingMoreContainer: {
+    width: 150,
+    height: 320,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  loadingMoreText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: "600",
   },
   addRecipeButton: {
     marginHorizontal: 10,
