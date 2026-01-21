@@ -23,16 +23,20 @@ export default function TimeInput({ value, onChange }: TimeInputProps) {
   const [hourInput, setHourInput] = useState(hour);
   const [minuteInput, setMinuteInput] = useState(minute);
   const [currentPeriod, setCurrentPeriod] = useState<"AM" | "PM">(period);
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
-    const { hour, minute, period } = convert24to12(value);
-    setHourInput(hour);
-    setMinuteInput(minute);
-    setCurrentPeriod(period);
-  }, [value]);
+    // Only sync from parent when not actively editing
+    if (!isFocused) {
+      const { hour, minute, period } = convert24to12(value);
+      setHourInput(hour);
+      setMinuteInput(minute);
+      setCurrentPeriod(period);
+    }
+  }, [value, isFocused]);
 
   // Updates the parent without formatting; only if valid numbers
-  const tryUpdateTime = (h: string, m: string, p: "AM" | "PM") => {
+  const tryUpdateTime = (h: string, m: string, p: "AM" | "PM", shouldPad: boolean = false) => {
     const hourNum = parseInt(h);
     const minuteNum = parseInt(m);
 
@@ -44,7 +48,9 @@ export default function TimeInput({ value, onChange }: TimeInputProps) {
       minuteNum >= 0 &&
       minuteNum <= 59
     ) {
-      const time24 = convert12to24(h.padStart(2, "0"), m.padStart(2, "0"), p);
+      const hourStr = shouldPad ? h.padStart(2, "0") : h;
+      const minuteStr = shouldPad ? m.padStart(2, "0") : m;
+      const time24 = convert12to24(hourStr, minuteStr, p);
       onChange(time24);
     }
   };
@@ -66,6 +72,62 @@ export default function TimeInput({ value, onChange }: TimeInputProps) {
     if (cleaned !== "") tryUpdateTime(hourInput, cleaned, currentPeriod);
   };
 
+  const handleHourBlur = () => {
+    setIsFocused(false);
+    if (hourInput !== "") {
+      let hourNum = parseInt(hourInput);
+      let newPeriod = currentPeriod;
+      
+      // Handle hours > 12 by converting to 12-hour format
+      if (hourNum > 12) {
+        // If currently AM and hour > 12, switch to PM
+        if (currentPeriod === "AM") {
+          newPeriod = "PM";
+          hourNum = hourNum - 12;
+        } else {
+          // If already PM, wrap around (13 PM -> 1 PM, 24 PM -> 12 PM)
+          hourNum = hourNum > 12 ? hourNum - 12 : hourNum;
+        }
+      } else if (hourNum === 0) {
+        hourNum = 12;
+      }
+      
+      const padded = hourNum.toString().padStart(2, "0");
+      setHourInput(padded);
+      setCurrentPeriod(newPeriod);
+      tryUpdateTime(padded, minuteInput, newPeriod, true);
+    }
+  };
+
+  const handleMinuteBlur = () => {
+    setIsFocused(false);
+    if (minuteInput !== "") {
+      let minuteNum = parseInt(minuteInput);
+      let hourNum = parseInt(hourInput) || 9;
+      let newPeriod = currentPeriod;
+      
+      // Handle minutes >= 60 by rolling over to next hour
+      if (minuteNum >= 60) {
+        const additionalHours = Math.floor(minuteNum / 60);
+        minuteNum = minuteNum % 60;
+        hourNum += additionalHours;
+        
+        // Handle hour overflow
+        while (hourNum > 12) {
+          hourNum -= 12;
+          newPeriod = newPeriod === "AM" ? "PM" : "AM";
+        }
+      }
+      
+      const paddedMinute = minuteNum.toString().padStart(2, "0");
+      const paddedHour = hourNum.toString().padStart(2, "0");
+      setMinuteInput(paddedMinute);
+      setHourInput(paddedHour);
+      setCurrentPeriod(newPeriod);
+      tryUpdateTime(paddedHour, paddedMinute, newPeriod, true);
+    }
+  };
+
   const handlePeriodToggle = () => {
     const newPeriod = currentPeriod === "AM" ? "PM" : "AM";
     setCurrentPeriod(newPeriod);
@@ -78,6 +140,8 @@ export default function TimeInput({ value, onChange }: TimeInputProps) {
       <TextInput
         value={hourInput}
         onChangeText={handleHourChange}
+        onFocus={() => setIsFocused(true)}
+        onBlur={handleHourBlur}
         placeholder="HH"
         placeholderTextColor={theme.icon}
         keyboardType="number-pad"
@@ -104,6 +168,8 @@ export default function TimeInput({ value, onChange }: TimeInputProps) {
       <TextInput
         value={minuteInput}
         onChangeText={handleMinuteChange}
+        onFocus={() => setIsFocused(true)}
+        onBlur={handleMinuteBlur}
         placeholder="MM"
         placeholderTextColor={theme.icon}
         keyboardType="number-pad"

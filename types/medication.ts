@@ -33,8 +33,8 @@ export const convert24to12 = (
   const period: "AM" | "PM" = hour >= 12 ? "PM" : "AM";
   const hour12 = hour % 12 || 12;
   return {
-    hour: hour12.toString().padStart(2, "0"),
-    minute: minutes,
+    hour: hour12.toString().length < 2 ? hour12.toString().padStart(2, "0") :  hour12.toString(),
+    minute: minutes.toString().padStart(2, "0"),
     period,
   };
 };
