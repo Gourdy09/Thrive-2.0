@@ -34,6 +34,7 @@ export interface FoodLogEntry {
     protein: number;
     carbs: number;
     calories?: number;
+    fiber?: number;
   };
   imageUrl?: string;
 }

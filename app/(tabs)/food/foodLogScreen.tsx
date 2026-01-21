@@ -37,6 +37,7 @@ interface FoodLogEntry {
     protein: number;
     carbs: number;
     calories?: number;
+    fiber: number;
   };
   imageUrl?: string;
 }
@@ -168,8 +169,9 @@ export default function FoodLogScreen() {
         protein: acc.protein + (entry.nutrition.protein || 0),
         carbs: acc.carbs + (entry.nutrition.carbs || 0),
         calories: acc.calories + (entry.nutrition.calories || 0),
+        fiber: acc.fiber + (entry.nutrition.fiber || 0)
       }),
-      { protein: 0, carbs: 0, calories: 0 }
+      { protein: 0, carbs: 0, calories: 0, fiber: 0 }
     );
   };
 
@@ -278,6 +280,16 @@ export default function FoodLogScreen() {
               {Math.round(totalNutrition.calories || 0)}
             </Text>
           </View>
+          <View style={{ alignItems: "center" }}>
+            <Text style={{ color: theme.icon, fontSize: 12, marginBottom: 4 }}>
+              Fiber
+            </Text>
+            <Text
+              style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}
+            >
+              {Math.round(totalNutrition.fiber || 0)}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -372,6 +384,9 @@ export default function FoodLogScreen() {
                           </Text>
                           <Text style={{ fontSize: 12, color: theme.icon }}>
                             Carbs: {Math.round(entry.nutrition.carbs)}g
+                          </Text>
+                          <Text style={{ fontSize: 12, color: theme.icon }}>
+                            Fiber: {Math.round(entry.nutrition.fiber)}g
                           </Text>
                         </View>
                       </View>

@@ -103,6 +103,7 @@ const Popup: React.FC<PopUpProps> = ({
           protein: selectedRecipe.nutrition?.protein || 0,
           carbs: selectedRecipe.nutrition?.carbs || 0,
           calories: selectedRecipe.nutrition?.calories || 0,
+          fiber: selectedRecipe.nutrition?.fiber || 0
         },
         imageUrl: selectedRecipe.imageUrl,
       };
