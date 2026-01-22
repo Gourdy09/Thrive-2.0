@@ -33,8 +33,10 @@ export default function MedicationContainer() {
 
   useEffect(() => {
     calculateNextMedication();
-    // Update every minute
-    const interval = setInterval(calculateNextMedication, 60000);
+    // Update every minute to recalculate next medication
+    const interval = setInterval(() => {
+      calculateNextMedication();
+    }, 60000);
     return () => clearInterval(interval);
   }, [medications]);
 

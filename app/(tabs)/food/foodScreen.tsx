@@ -1,5 +1,3 @@
-// app/(tabs)/food/foodScreen.tsx - FIXED INFINITE SCROLL
-
 import FilterChips, { RecipeFilters } from "@/components/food/FilterChips";
 import RecipeCard from "@/components/food/RecipeCard";
 import { RecipeSkeletonGrid } from "@/components/food/RecipeCardSkeleton";
@@ -8,7 +6,7 @@ import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRecipeScraper } from "@/hooks/useRecipeScraper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   BookOpen,
   Camera,
@@ -34,26 +32,27 @@ import {
 } from "react-native";
 import Popup from "./extendedRecipeInfoModal";
 
+
+
 interface RecipeData {
   id: string;
   title: string;
   imageUrl: string;
   ingredients: string[];
-  instructions?: string[];
-  cookingTime?: string;
-  prepTime?: string;
+  instructions: string[];
   totalTime?: string;
   servings?: string;
-  nutrition?: {
+  nutrition: {
     protein: number;
     carbs: number;
-    fat?: number;
-    calories?: number;
-    fiber?: number;
+    fat: number;
+    fiber: number;
+    calories: number;
   };
   tags?: string[];
   difficulty?: string;
   cuisine?: string;
+  isCustom?: boolean;
   isBookmarked?: boolean;
 }
 
@@ -159,10 +158,15 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
 
   const { recipes, loading, error, refreshRecipes, userPreferences, cycleRecipes } = useRecipeScraper();
 
+  useFocusEffect(
+    React.useCallback(() => {
+      loadCustomRecipes();
+    }, [])
+  );
+
   useEffect(() => {
     loadBookmarkedRecipes();
     loadFoodLogCount();
-    loadCustomRecipes();
 
     const interval = setInterval(loadFoodLogCount, 3000);
     return () => {
@@ -398,9 +402,9 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
         {userPreferences && userPreferences.dietaryRestrictions.length > 0 && (
           <View
             style={{
-              backgroundColor: theme.tint + "20",
+              backgroundColor: theme.background,
               borderWidth: 1,
-              borderColor: theme.tint + "40",
+              borderColor: theme.tint,
               borderRadius: 12,
               padding: 12,
               marginHorizontal: 10,
@@ -601,16 +605,15 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
 
       {/* Recipe Modal */}
       <Popup
+        title=""
         visible={isPopUpVisible}
         onClose={() => setIsPopUpVisible(false)}
-        title=" "
         recipeId={selectedRecipeID}
         allRecipes={allRecipes}
         isBookmarked={bookmarkedRecipes.includes(selectedRecipeID)}
         onToggleBookmark={toggleBookmark}
-      >
-        <Text> </Text>
-      </Popup>
+        onRecipeDeleted={loadCustomRecipes}
+      />
     </View>
   );
 }

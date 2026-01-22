@@ -18,7 +18,7 @@ export interface RecipeData {
     carbs: number;
     fat: number;
     calories: number;
-    fiber?: number;
+    fiber: number;
   };
   tags: string[];
   difficulty?: string;

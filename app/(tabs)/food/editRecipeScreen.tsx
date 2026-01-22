@@ -1,5 +1,4 @@
 import ImagePickerComponent from "@/components/food/ImagePickerComponent";
-import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -24,147 +23,165 @@ interface RecipeData {
   imageUrl: string;
   ingredients: string[];
   instructions: string[];
-  cT: string;
-  protein: number;
-  carbs: number;
-  tags: string[];
-  servingSize: string;
-  isCustom: boolean;
+  totalTime?: string;
+  servings?: string;
+  nutrition: {
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+    calories: number;
+  };
+  tags?: string[];
+  difficulty?: string;
+  cuisine?: string;
+  isCustom?: boolean;
+  isBookmarked?: boolean;
 }
 
 export default function EditRecipeScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
-  const params = useLocalSearchParams();
+
+  const { user } = useAuth();
+  const username = user?.email?.split("@")[0] || "User";
 
   const [recipeId, setRecipeId] = useState("");
-  const [recipe, onChangeRecipe] = useState("");
-  const [ingredients, onChangeIngredients] = useState("");
-  const [instructions, onChangeInstructions] = useState("");
-  const [completionTime, onChangeCT] = useState("");
-  const [protein, onChangeProtein] = useState("");
-  const [carbs, onChangeCarbs] = useState("");
+  const [title, setTitle] = useState("");
+  const [ingredients, setIngredients] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [time, setTime] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const [protein, setProtein] = useState("");
+  const [carbs, setCarbs] = useState("");
+  const [fat, setFat] = useState("");
+  const [fiber, setFiber] = useState("");
+  const [calories, setCalories] = useState("");
+
+  const [tags, setTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>(tags);
+
+  const onChangeTitle = (text: string) => setTitle(text);
+  const onChangeIngredients = (text: string) => setIngredients(text);
+  const onChangeInstructions = (text: string) => setInstructions(text);
+  const onChangeCookTime = (text: string) => setTime(text);
+  const onChangeProtein = (text: string) => setProtein(text);
+  const onChangeCarbs = (text: string) => setCarbs(text);
+  const onChangeFat = (text: string) => setFat(text);
+  const onChangeFiber = (text: string) => setFiber(text);
+  const onChangeCalories = (text: string) => setCalories(text);
 
   const AVAILABLE_TAGS = [
-    "Vegetarian",
-    "Vegan",
-    "Gluten-free",
-    "Dairy-free",
-    "Low Carb",
-    "High Protein",
-    "Quick",
     "Breakfast",
     "Lunch",
     "Dinner",
     "Snack",
+    "Vegetarian",
+    "Vegan",
+    "Gluten-Free",
     "Dessert",
+    "Quick",
+    "Healthy"
   ];
+
+  useEffect(() => {
+    if (!params.recipeData) return;
+
+    const recipe: RecipeData = JSON.parse(params.recipeData as string);
+    setRecipeId(recipe.id);
+    setTitle(recipe.title);
+    setIngredients(recipe.ingredients.join(", "));
+    setInstructions(recipe.instructions.join("\n"));
+    setTime(recipe.totalTime?.replace(" min", "") || "");
+    setImageUrl(recipe.imageUrl || "");
+    setTags(recipe.tags || []);
+
+    const n = recipe.nutrition ?? {
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      fiber: 0,
+      calories: 0,
+    };
+
+    setProtein(n.protein.toString());
+    setCarbs(n.carbs.toString());
+    setFat(n.fat.toString());
+    setFiber(n.fiber.toString());
+    setCalories(n.calories.toString());
+  }, [params.recipeData]);
 
   const toggleTag = (tag: string) => {
     if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter((t) => t !== tag));
+      setSelectedTags(selectedTags.filter(t => t !== tag));
     } else {
       setSelectedTags([...selectedTags, tag]);
     }
   };
 
-  const { user } = useAuth();
-  const username = user?.email?.split("@")[0] || "User";
-
-  useEffect(() => {
-    if (params.recipeData) {
-      try {
-        const recipeData: RecipeData = JSON.parse(params.recipeData as string);
-        setRecipeId(recipeData.id);
-        onChangeRecipe(recipeData.title);
-        onChangeIngredients(recipeData.ingredients.join(", "));
-        onChangeInstructions(recipeData.instructions.join("\n"));
-        onChangeCT(recipeData.cT.replace(" min", ""));
-        onChangeProtein(recipeData.protein.toString());
-        onChangeCarbs(recipeData.carbs.toString());
-        setImageUrl(recipeData.imageUrl || "");
-        setSelectedTags(recipeData.tags || []);
-      } catch (error) {
-        console.error("Error parsing recipe data:", error);
-        Alert.alert("Error", "Failed to load recipe data");
-        router.back();
-      }
-    }
-  }, [params]);
-
-  const isFormValid = recipe.trim() !== "" && ingredients.trim() !== "";
+  const isFormValid =
+    title.trim().length > 0 &&
+    ingredients.trim().length > 0 &&
+    protein !== "" &&
+    carbs !== "" &&
+    fat !== "" &&
+    fiber !== "" &&
+    calories !== "";
 
   const handleSave = async () => {
-    if (!isFormValid) {
-      Alert.alert(
-        "Error",
-        "Please fill in at least the recipe name and ingredients"
-      );
+    if (!title.trim() || !ingredients.trim()) {
+      Alert.alert("Error", "Recipe name and ingredients are required");
       return;
     }
 
-    try {
-      const updatedRecipe = {
-        id: recipeId,
-        title: recipe,
-        imageUrl: imageUrl || "https://via.placeholder.com/280x160/4ECDC4/FFFFFF?text=Custom+Recipe",
-        ingredients: ingredients
-          .split(",")
-          .map((i) => i.trim())
-          .filter((i) => i),
-        instructions: instructions.split("\n").filter((i) => i.trim()),
-        cT: completionTime ? `${completionTime} min` : "N/A",
+    const updatedRecipe: RecipeData = {
+      id: recipeId,
+      title,
+      imageUrl:
+        imageUrl ||
+        "https://via.placeholder.com/280x160/4ECDC4/FFFFFF?text=Custom+Recipe",
+      ingredients: ingredients.split(",").map(i => i.trim()).filter(Boolean),
+      instructions: instructions.split("\n").filter(Boolean),
+      totalTime: time ? `${time} min` : "N/A",
+      servings: "1 serving",
+      nutrition: {
         protein: parseFloat(protein) || 0,
         carbs: parseFloat(carbs) || 0,
-        tags: selectedTags.length > 0 ? selectedTags : ["Custom"],
-        servingSize: "1 serving",
-        isBookmarked: false,
-        isCustom: true,
-      };
+        fat: parseFloat(fat) || 0,
+        fiber: parseFloat(fiber) || 0,
+        calories: parseFloat(calories) || 0,
+      },
+      tags: tags.length ? tags : ["Custom"],
+      difficulty: "Easy",
+      cuisine: "Custom",
+      isCustom: true,
+      isBookmarked: false,
+    };
 
-      const stored = await AsyncStorage.getItem("customRecipes");
-      const currentRecipes = stored ? JSON.parse(stored) : [];
+    const stored = await AsyncStorage.getItem("customRecipes");
+    const recipes = stored ? JSON.parse(stored) : [];
+    const updated = recipes.map((r: RecipeData) =>
+      r.id === recipeId ? updatedRecipe : r
+    );
 
-      const updatedRecipes = currentRecipes.map((r: RecipeData) =>
-        r.id === recipeId ? updatedRecipe : r
-      );
-
-      await AsyncStorage.setItem(
-        "customRecipes",
-        JSON.stringify(updatedRecipes)
-      );
-
-      Alert.alert("Success", "Recipe updated!", [
-        {
-          text: "OK",
-          onPress: () => router.back(),
-        },
-      ]);
-    } catch (error) {
-      console.error("Error updating recipe:", error);
-      Alert.alert("Error", "Failed to update recipe");
-    }
+    await AsyncStorage.setItem("customRecipes", JSON.stringify(updated));
+    Alert.alert("Success", "Recipe updated", [{ text: "OK", onPress: () => router.back() }]);
   };
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: theme.background }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={0}
+      style={{ flex: 1, backgroundColor: theme.background }}
     >
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: theme.background,
-          paddingHorizontal: 24,
-          paddingTop: 60,
-        }}
-      >
-        <Header username={username} icon="Hamburger" />
-
+      <View style={{
+        flex: 1,
+        backgroundColor: theme.background,
+        paddingHorizontal: 24,
+        paddingTop: 60,
+      }}>
         {/* Back Button & Title */}
         <View
           style={{
@@ -212,8 +229,8 @@ export default function EditRecipeScreen() {
               Recipe Name *
             </Text>
             <TextInput
-              onChangeText={onChangeRecipe}
-              value={recipe}
+              onChangeText={onChangeTitle}
+              value={title}
               placeholder="e.g., Grilled Chicken Salad"
               placeholderTextColor={theme.icon}
               style={{
@@ -311,46 +328,6 @@ export default function EditRecipeScreen() {
             />
           </View>
 
-          {/* Image URL */}
-          <View style={{ marginBottom: 20 }}>
-            <Text
-              style={{
-                color: theme.text,
-                marginBottom: 8,
-                fontSize: 16,
-                fontWeight: "600",
-              }}
-            >
-              Image URL (Optional)
-            </Text>
-            <Text
-              style={{
-                color: theme.icon,
-                marginBottom: 8,
-                fontSize: 13,
-              }}
-            >
-              Paste an image URL or leave blank for default
-            </Text>
-            <TextInput
-              value={imageUrl}
-              onChangeText={setImageUrl}
-              placeholder="https://example.com/image.jpg"
-              placeholderTextColor={theme.icon}
-              keyboardType="url"
-              autoCapitalize="none"
-              style={{
-                backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
-                color: theme.text,
-                padding: 16,
-                borderRadius: 12,
-                fontSize: 16,
-                borderWidth: 2,
-                borderColor: theme.border,
-              }}
-            />
-          </View>
-
           {/* Tags Section */}
           <View style={{ marginBottom: 20 }}>
             <Text
@@ -416,7 +393,7 @@ export default function EditRecipeScreen() {
           {/* Nutrition Info Row */}
           <View
             style={{
-              flexDirection: "row",
+              flexDirection: "column",
               gap: 12,
               marginBottom: 20,
             }}
@@ -444,8 +421,8 @@ export default function EditRecipeScreen() {
                   borderWidth: 2,
                   borderColor: theme.border,
                 }}
-                onChangeText={onChangeCT}
-                value={completionTime}
+                onChangeText={onChangeCookTime}
+                value={time}
                 placeholder="30"
                 placeholderTextColor={theme.icon}
                 keyboardType="numeric"
@@ -513,6 +490,99 @@ export default function EditRecipeScreen() {
                 keyboardType="numeric"
               />
             </View>
+
+            {/* Fat */}
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: theme.text,
+                  marginBottom: 8,
+                  fontSize: 16,
+                  fontWeight: "600",
+                }}
+              >
+                Fat (g)
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor:
+                    colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                  color: theme.text,
+                  padding: 16,
+                  borderRadius: 12,
+                  fontSize: 16,
+                  borderWidth: 2,
+                  borderColor: theme.border,
+                }}
+                onChangeText={onChangeFat}
+                value={fat}
+                placeholder="15"
+                placeholderTextColor={theme.icon}
+                keyboardType="numeric"
+              />
+            </View>
+
+            {/* Fiber */}
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: theme.text,
+                  marginBottom: 8,
+                  fontSize: 16,
+                  fontWeight: "600",
+                }}
+              >
+                Fiber (g)
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor:
+                    colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                  color: theme.text,
+                  padding: 16,
+                  borderRadius: 12,
+                  fontSize: 16,
+                  borderWidth: 2,
+                  borderColor: theme.border,
+                }}
+                onChangeText={onChangeFiber}
+                value={fiber}
+                placeholder="15"
+                placeholderTextColor={theme.icon}
+                keyboardType="numeric"
+              />
+            </View>
+
+            {/* Calories */}
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: theme.text,
+                  marginBottom: 8,
+                  fontSize: 16,
+                  fontWeight: "600",
+                }}
+              >
+                Calories (cal)
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor:
+                    colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                  color: theme.text,
+                  padding: 16,
+                  borderRadius: 12,
+                  fontSize: 16,
+                  borderWidth: 2,
+                  borderColor: theme.border,
+                }}
+                onChangeText={onChangeCalories}
+                value={calories}
+                placeholder="15"
+                placeholderTextColor={theme.icon}
+                keyboardType="numeric"
+              />
+            </View>
           </View>
 
           {/* Image Picker */}
@@ -520,7 +590,7 @@ export default function EditRecipeScreen() {
             currentImage={imageUrl}
             onImageSelected={setImageUrl}
           />
-          
+
           {/* Save Button */}
           <TouchableOpacity
             style={{

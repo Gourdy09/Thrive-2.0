@@ -51,7 +51,7 @@ export default function FoodLogScreen() {
 
   const { user } = useAuth();
   const username = user?.email?.split("@")[0] || "User";
-  
+
   // Use the cleanup hook
   useFoodLogCleanup();
 
@@ -63,7 +63,7 @@ export default function FoodLogScreen() {
           ...entry,
           timestamp: new Date(entry.timestamp),
         }));
-        
+
         // Filter for today's entries only
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -72,7 +72,7 @@ export default function FoodLogScreen() {
           entryDate.setHours(0, 0, 0, 0);
           return entryDate.getTime() === today.getTime();
         });
-        
+
         setFoodLog(todayEntries);
       }
     } catch (error) {
@@ -342,10 +342,11 @@ export default function FoodLogScreen() {
                     <View
                       style={{
                         flexDirection: "row",
-                        justifyContent: "space-between",
                         alignItems: "flex-start",
+                        gap: 12,
                       }}
                     >
+                      {/* Text Content */}
                       <View style={{ flex: 1 }}>
                         <Text
                           style={{
@@ -353,6 +354,7 @@ export default function FoodLogScreen() {
                             fontWeight: "600",
                             color: theme.text,
                             marginBottom: 4,
+                            flexWrap: "wrap",
                           }}
                         >
                           {entry.recipeName}
@@ -378,7 +380,7 @@ export default function FoodLogScreen() {
                             })}
                           </Text>
                         </View>
-                        <View style={{ flexDirection: "row", gap: 16 }}>
+                        <View style={{ flexDirection: "row", gap: 16, flexWrap: "wrap" }}>
                           <Text style={{ fontSize: 12, color: theme.icon }}>
                             Protein: {Math.round(entry.nutrition.protein)}g
                           </Text>
@@ -391,6 +393,7 @@ export default function FoodLogScreen() {
                         </View>
                       </View>
 
+                      {/* Image */}
                       {entry.imageUrl && (
                         <Image
                           source={{ uri: entry.imageUrl }}
@@ -398,22 +401,23 @@ export default function FoodLogScreen() {
                             width: 60,
                             height: 60,
                             borderRadius: 8,
-                            marginLeft: 12,
                           }}
+                          resizeMode="cover"
                         />
                       )}
 
+                      {/* Delete Button */}
                       <TouchableOpacity
                         onPress={() => deleteEntry(entry.id)}
                         style={{
                           padding: 8,
-                          marginLeft: 8,
                         }}
                       >
                         <Trash2 size={18} color="#FF6B6B" />
                       </TouchableOpacity>
                     </View>
                   </View>
+
                 ))}
               </View>
             );

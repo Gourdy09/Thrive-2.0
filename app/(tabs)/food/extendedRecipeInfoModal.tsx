@@ -1,3 +1,4 @@
+import MealTypeModal from "@/components/food/MealTypeModal";
 import { Colors } from "@/constants/Colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -27,33 +28,33 @@ interface RecipeData {
   title: string;
   imageUrl: string;
   ingredients: string[];
-  instructions?: string[];
-  cookingTime?: string;
-  prepTime?: string;
+  instructions: string[];
   totalTime?: string;
   servings?: string;
-  nutrition?: {
+  nutrition: {
     protein: number;
     carbs: number;
-    fat?: number;
-    calories?: number;
-    fiber?: number;
+    fat: number;
+    fiber: number;
+    calories: number;
   };
   tags?: string[];
   difficulty?: string;
   cuisine?: string;
   isCustom?: boolean;
+  isBookmarked?: boolean;
 }
 
 interface PopUpProps {
   visible: boolean;
   onClose: () => void;
   title: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   recipeId: string;
   allRecipes: RecipeData[];
   isBookmarked: boolean;
   onToggleBookmark: (id: string) => void;
+  onRecipeDeleted?: () => void;
 }
 
 const Popup: React.FC<PopUpProps> = ({
@@ -63,6 +64,7 @@ const Popup: React.FC<PopUpProps> = ({
   allRecipes,
   isBookmarked,
   onToggleBookmark,
+  onRecipeDeleted
 }) => {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
@@ -101,9 +103,12 @@ const Popup: React.FC<PopUpProps> = ({
               const recipes = stored ? JSON.parse(stored) : [];
               const updated = recipes.filter((r: any) => r.id !== selectedRecipe.id);
               await AsyncStorage.setItem("customRecipes", JSON.stringify(updated));
-
-              Alert.alert("Success", "Recipe deleted successfully");
-              onClose();
+              if (onRecipeDeleted) {
+                onRecipeDeleted();
+              }
+              setTimeout(() => {
+                onClose();
+              }, 100);
             } catch (error) {
               console.error("Error deleting recipe:", error);
               Alert.alert("Error", "Failed to delete recipe");
@@ -116,7 +121,12 @@ const Popup: React.FC<PopUpProps> = ({
 
   const handleEdit = () => {
     if (!isCustomRecipe) return;
-    onClose(); // Close the modal
+
+    if (onRecipeDeleted) {
+      onRecipeDeleted();
+    }
+
+    onClose();
     router.push({
       pathname: "/(tabs)/food/editRecipeScreen",
       params: { recipeData: JSON.stringify(selectedRecipe) }
@@ -150,8 +160,6 @@ const Popup: React.FC<PopUpProps> = ({
       const weeklyData = weeklyStored ? JSON.parse(weeklyStored) : [];
       const updatedWeeklyData = [logEntry, ...weeklyData];
       await AsyncStorage.setItem("weeklyInsightsData", JSON.stringify(updatedWeeklyData));
-
-      Alert.alert("Added to Food Log", `${selectedRecipe.title} has been logged for ${mealType}`);
       setShowMealModal(false);
     } catch (error) {
       console.error("Error adding to food log:", error);
@@ -428,20 +436,18 @@ const Popup: React.FC<PopUpProps> = ({
                       value={`${selectedRecipe.nutrition.carbs}g`}
                       color="#FF6B6B"
                     />
-                    {selectedRecipe.nutrition.fat !== undefined && (
-                      <NutritionItem
-                        label="Fat"
-                        value={`${selectedRecipe.nutrition.fat}g`}
-                        color="#FFA07A"
-                      />
-                    )}
-                    {selectedRecipe.nutrition.fiber !== undefined && (
-                      <NutritionItem
-                        label="Fiber"
-                        value={`${selectedRecipe.nutrition.fiber}g`}
-                        color="#95E1D3"
-                      />
-                    )}
+
+                    <NutritionItem
+                      label="Fat"
+                      value={`${selectedRecipe.nutrition.fat}g`}
+                      color="#FFA07A"
+                    />
+
+                    <NutritionItem
+                      label="Fiber"
+                      value={`${selectedRecipe.nutrition.fiber}g`}
+                      color="#95E1D3"
+                    />
                   </View>
                 </View>
               )}
@@ -622,7 +628,7 @@ const Popup: React.FC<PopUpProps> = ({
                   }}
                     onPress={() => handleEdit()}
                   >
-                    <Text style={{color: theme.background}}>
+                    <Text style={{ color: theme.background }}>
                       Edit
                     </Text>
                   </TouchableOpacity>
@@ -654,6 +660,13 @@ const Popup: React.FC<PopUpProps> = ({
           </ScrollView>
         </View>
       </View>
+      <MealTypeModal
+        visible={showMealModal}
+        onClose={() => setShowMealModal(false)}
+        recipeName={selectedRecipe?.title || "Recipe"}
+        onSelect={handleMealTypeSelect}
+      />
+
     </Modal>
   );
 

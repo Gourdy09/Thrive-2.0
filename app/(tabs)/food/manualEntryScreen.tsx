@@ -18,14 +18,28 @@ import {
   useColorScheme,
 } from "react-native";
 
-interface ManualEntryData {
-  recipeName: string;
+interface RecipeData {
+  id: string;
+  title: string;
+  imageUrl: string;
   ingredients: string[];
   instructions: string[];
-  completionTime: number;
-  protein: number;
-  carbs: number;
+  completionTime?: string;
+  servings?: string;
+  nutrition: {
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+    calories: number;
+  };
+  tags?: string[];
+  difficulty?: string;
+  cuisine?: string;
+  isCustom?: boolean;
+  isBookmarked?: boolean;
 }
+
 
 export default function ManualEntryScreen() {
   const router = useRouter();
@@ -35,9 +49,12 @@ export default function ManualEntryScreen() {
   const [recipe, onChangeRecipe] = useState("");
   const [ingredients, onChangeIngredients] = useState("");
   const [instructions, onChangeInstructions] = useState("");
-  const [completionTime, onChangeCT] = useState("");
+  const [cookTime, onChangeCookTime] = useState("");
   const [protein, onChangeProtein] = useState("");
   const [carbs, onChangeCarbs] = useState("");
+  const [fat, onChangeFat] = useState("");
+  const [calories, onChangeCalories] = useState("");
+  const [fiber, onChangeFiber] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
@@ -68,7 +85,7 @@ export default function ManualEntryScreen() {
 
   const { user } = useAuth();
   const username = user?.email?.split("@")[0] || "User";
-  
+
   const handleSave = async () => {
     if (!isFormValid) {
       Alert.alert(
@@ -78,16 +95,23 @@ export default function ManualEntryScreen() {
       return;
     }
 
-    const data: ManualEntryData = {
-      recipeName: recipe,
+    const data: RecipeData = {
+      id: `custom-${Date.now()}`,
+      title: recipe,
+      imageUrl: imageUrl || "https://via.placeholder.com/280x160/4ECDC4/FFFFFF?text=Custom+Recipe",
       ingredients: ingredients
         .split(",")
         .map((i) => i.trim())
         .filter((i) => i),
       instructions: instructions.split("\n").filter((i) => i.trim()),
-      completionTime: parseInt(completionTime) || 0,
-      protein: parseFloat(protein) || 0,
-      carbs: parseFloat(carbs) || 0,
+      completionTime: cookTime || "0",
+      nutrition: {
+        protein: parseFloat(protein) || 0,
+        carbs: parseFloat(carbs) || 0,
+        fat: parseFloat(fat) || 0,
+        fiber: parseFloat(fiber) || 0,
+        calories: parseFloat(calories) || 0
+      }
     };
 
     console.log("Saving:", data);
@@ -95,7 +119,7 @@ export default function ManualEntryScreen() {
     try {
       const newRecipe = {
         id: `custom-${Date.now()}`,
-        title: data.recipeName,
+        title: data.title,
         imageUrl: imageUrl || "https://via.placeholder.com/280x160/4ECDC4/FFFFFF?text=Custom+Recipe",
         ingredients: data.ingredients,
         instructions: data.instructions,
@@ -104,12 +128,13 @@ export default function ManualEntryScreen() {
         totalTime: data.completionTime ? `${data.completionTime} min` : "N/A",
         servings: "1 serving",
         nutrition: {
-          protein: data.protein,
-          carbs: data.carbs,
-          fat: 0,
-          calories: 0,
-          fiber: 0,
+          protein: data.nutrition.protein,
+          carbs: data.nutrition.carbs,
+          fat: data.nutrition.fat,
+          fiber: data.nutrition.fiber,
+          calories: data.nutrition.calories,
         },
+
         tags: selectedTags.length > 0 ? selectedTags : ["Custom"],
         difficulty: "Easy",
         cuisine: "Custom",
@@ -294,49 +319,9 @@ export default function ManualEntryScreen() {
               }}
               onChangeText={onChangeInstructions}
               value={instructions}
-              placeholder="1. Season the chicken with salt and pepper&#10;2. Grill for 6-8 minutes per side&#10;3. Let rest, then slice&#10;4. Combine with salad ingredients"
+              placeholder="Season the chicken with salt and pepper&#10;Grill for 6-8 minutes per side&#10;Let rest, then slice&#10;Combine with salad ingredients"
               placeholderTextColor={theme.icon}
               multiline
-            />
-          </View>
-
-          {/* Image URL */}
-          <View style={{ marginBottom: 20 }}>
-            <Text
-              style={{
-                color: theme.text,
-                marginBottom: 8,
-                fontSize: 16,
-                fontWeight: "600",
-              }}
-            >
-              Image URL (Optional)
-            </Text>
-            <Text
-              style={{
-                color: theme.icon,
-                marginBottom: 8,
-                fontSize: 13,
-              }}
-            >
-              Paste an image URL or leave blank for default
-            </Text>
-            <TextInput
-              value={imageUrl}
-              onChangeText={setImageUrl}
-              placeholder="https://example.com/image.jpg"
-              placeholderTextColor={theme.icon}
-              keyboardType="url"
-              autoCapitalize="none"
-              style={{
-                backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
-                color: theme.text,
-                padding: 16,
-                borderRadius: 12,
-                fontSize: 16,
-                borderWidth: 2,
-                borderColor: theme.border,
-              }}
             />
           </View>
 
@@ -402,30 +387,21 @@ export default function ManualEntryScreen() {
             </View>
           </View>
 
-          {/* Nutrition Info Row */}
+          {/* Nutrition Info */}
           <View
             style={{
-              flexDirection: "row",
-              gap: 12,
+              flexDirection: "column",
               marginBottom: 20,
             }}
           >
             {/* Completion Time */}
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  color: theme.text,
-                  marginBottom: 8,
-                  fontSize: 16,
-                  fontWeight: "600",
-                }}
-              >
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ color: theme.text, marginBottom: 8, fontSize: 16, fontWeight: "600" }}>
                 Time (min)
               </Text>
               <TextInput
                 style={{
-                  backgroundColor:
-                    colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                  backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
                   color: theme.text,
                   padding: 16,
                   borderRadius: 12,
@@ -433,8 +409,8 @@ export default function ManualEntryScreen() {
                   borderWidth: 2,
                   borderColor: theme.border,
                 }}
-                onChangeText={onChangeCT}
-                value={completionTime}
+                onChangeText={onChangeCookTime}
+                value={cookTime}
                 placeholder="30"
                 placeholderTextColor={theme.icon}
                 keyboardType="numeric"
@@ -442,21 +418,13 @@ export default function ManualEntryScreen() {
             </View>
 
             {/* Protein */}
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  color: theme.text,
-                  marginBottom: 8,
-                  fontSize: 16,
-                  fontWeight: "600",
-                }}
-              >
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ color: theme.text, marginBottom: 8, fontSize: 16, fontWeight: "600" }}>
                 Protein (g)
               </Text>
               <TextInput
                 style={{
-                  backgroundColor:
-                    colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                  backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
                   color: theme.text,
                   padding: 16,
                   borderRadius: 12,
@@ -473,21 +441,13 @@ export default function ManualEntryScreen() {
             </View>
 
             {/* Carbs */}
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  color: theme.text,
-                  marginBottom: 8,
-                  fontSize: 16,
-                  fontWeight: "600",
-                }}
-              >
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ color: theme.text, marginBottom: 8, fontSize: 16, fontWeight: "600" }}>
                 Carbs (g)
               </Text>
               <TextInput
                 style={{
-                  backgroundColor:
-                    colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                  backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
                   color: theme.text,
                   padding: 16,
                   borderRadius: 12,
@@ -502,7 +462,77 @@ export default function ManualEntryScreen() {
                 keyboardType="numeric"
               />
             </View>
+
+            {/* Fat */}
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ color: theme.text, marginBottom: 8, fontSize: 16, fontWeight: "600" }}>
+                Fat (g)
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                  color: theme.text,
+                  padding: 16,
+                  borderRadius: 12,
+                  fontSize: 16,
+                  borderWidth: 2,
+                  borderColor: theme.border,
+                }}
+                onChangeText={onChangeFat}
+                value={fat}
+                placeholder="15"
+                placeholderTextColor={theme.icon}
+                keyboardType="numeric"
+              />
+            </View>
+
+            {/* Fiber */}
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ color: theme.text, marginBottom: 8, fontSize: 16, fontWeight: "600" }}>
+                Fiber (g)
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                  color: theme.text,
+                  padding: 16,
+                  borderRadius: 12,
+                  fontSize: 16,
+                  borderWidth: 2,
+                  borderColor: theme.border,
+                }}
+                onChangeText={onChangeFiber}
+                value={fiber}
+                placeholder="15"
+                placeholderTextColor={theme.icon}
+                keyboardType="numeric"
+              />
+            </View>
+
+            {/* Calories */}
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ color: theme.text, marginBottom: 8, fontSize: 16, fontWeight: "600" }}>
+                Calories (cal)
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                  color: theme.text,
+                  padding: 16,
+                  borderRadius: 12,
+                  fontSize: 16,
+                  borderWidth: 2,
+                  borderColor: theme.border,
+                }}
+                onChangeText={onChangeCalories}
+                value={calories}
+                placeholder="250"
+                placeholderTextColor={theme.icon}
+                keyboardType="numeric"
+              />
+            </View>
           </View>
+
 
           {/* Image Picker */}
           <ImagePickerComponent
