@@ -1,4 +1,4 @@
-// app/(tabs)/food/editRecipeScreen.tsx
+import ImagePickerComponent from "@/components/food/ImagePickerComponent";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,6 +17,7 @@ import {
   View,
   useColorScheme,
 } from "react-native";
+
 interface RecipeData {
   id: string;
   title: string;
@@ -44,9 +45,35 @@ export default function EditRecipeScreen() {
   const [completionTime, onChangeCT] = useState("");
   const [protein, onChangeProtein] = useState("");
   const [carbs, onChangeCarbs] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const AVAILABLE_TAGS = [
+    "Vegetarian",
+    "Vegan",
+    "Gluten-free",
+    "Dairy-free",
+    "Low Carb",
+    "High Protein",
+    "Quick",
+    "Breakfast",
+    "Lunch",
+    "Dinner",
+    "Snack",
+    "Dessert",
+  ];
+
+  const toggleTag = (tag: string) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter((t) => t !== tag));
+    } else {
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
 
   const { user } = useAuth();
   const username = user?.email?.split("@")[0] || "User";
+
   useEffect(() => {
     if (params.recipeData) {
       try {
@@ -58,6 +85,8 @@ export default function EditRecipeScreen() {
         onChangeCT(recipeData.cT.replace(" min", ""));
         onChangeProtein(recipeData.protein.toString());
         onChangeCarbs(recipeData.carbs.toString());
+        setImageUrl(recipeData.imageUrl || "");
+        setSelectedTags(recipeData.tags || []);
       } catch (error) {
         console.error("Error parsing recipe data:", error);
         Alert.alert("Error", "Failed to load recipe data");
@@ -81,7 +110,7 @@ export default function EditRecipeScreen() {
       const updatedRecipe = {
         id: recipeId,
         title: recipe,
-        imageUrl: "",
+        imageUrl: imageUrl || "https://via.placeholder.com/280x160/4ECDC4/FFFFFF?text=Custom+Recipe",
         ingredients: ingredients
           .split(",")
           .map((i) => i.trim())
@@ -90,13 +119,12 @@ export default function EditRecipeScreen() {
         cT: completionTime ? `${completionTime} min` : "N/A",
         protein: parseFloat(protein) || 0,
         carbs: parseFloat(carbs) || 0,
-        tags: ["Custom"],
+        tags: selectedTags.length > 0 ? selectedTags : ["Custom"],
         servingSize: "1 serving",
         isBookmarked: false,
         isCustom: true,
       };
 
-      // Load custom recipes and update the specific one
       const stored = await AsyncStorage.getItem("customRecipes");
       const currentRecipes = stored ? JSON.parse(stored) : [];
 
@@ -264,7 +292,8 @@ export default function EditRecipeScreen() {
             </Text>
             <TextInput
               style={{
-                backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                backgroundColor:
+                  colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
                 color: theme.text,
                 padding: 16,
                 borderRadius: 12,
@@ -280,6 +309,108 @@ export default function EditRecipeScreen() {
               placeholderTextColor={theme.icon}
               multiline
             />
+          </View>
+
+          {/* Image URL */}
+          <View style={{ marginBottom: 20 }}>
+            <Text
+              style={{
+                color: theme.text,
+                marginBottom: 8,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              Image URL (Optional)
+            </Text>
+            <Text
+              style={{
+                color: theme.icon,
+                marginBottom: 8,
+                fontSize: 13,
+              }}
+            >
+              Paste an image URL or leave blank for default
+            </Text>
+            <TextInput
+              value={imageUrl}
+              onChangeText={setImageUrl}
+              placeholder="https://example.com/image.jpg"
+              placeholderTextColor={theme.icon}
+              keyboardType="url"
+              autoCapitalize="none"
+              style={{
+                backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                color: theme.text,
+                padding: 16,
+                borderRadius: 12,
+                fontSize: 16,
+                borderWidth: 2,
+                borderColor: theme.border,
+              }}
+            />
+          </View>
+
+          {/* Tags Section */}
+          <View style={{ marginBottom: 20 }}>
+            <Text
+              style={{
+                color: theme.text,
+                marginBottom: 8,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              Tags (Optional)
+            </Text>
+            <Text
+              style={{
+                color: theme.icon,
+                marginBottom: 12,
+                fontSize: 13,
+              }}
+            >
+              Select tags that describe your recipe
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 8,
+              }}
+            >
+              {AVAILABLE_TAGS.map((tag) => {
+                const isSelected = selectedTags.includes(tag);
+                return (
+                  <TouchableOpacity
+                    key={tag}
+                    onPress={() => toggleTag(tag)}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      borderWidth: 2,
+                      borderColor: isSelected ? theme.tint : theme.border,
+                      backgroundColor: isSelected
+                        ? theme.tint + "20"
+                        : colorScheme === "dark"
+                          ? "#1c1e22"
+                          : "#f8f9fa",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: isSelected ? theme.tint : theme.text,
+                        fontSize: 14,
+                        fontWeight: isSelected ? "600" : "500",
+                      }}
+                    >
+                      {tag}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {/* Nutrition Info Row */}
@@ -384,6 +515,12 @@ export default function EditRecipeScreen() {
             </View>
           </View>
 
+          {/* Image Picker */}
+          <ImagePickerComponent
+            currentImage={imageUrl}
+            onImageSelected={setImageUrl}
+          />
+          
           {/* Save Button */}
           <TouchableOpacity
             style={{

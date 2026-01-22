@@ -1,4 +1,6 @@
 import { Colors } from "@/constants/Colors";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import {
   Bookmark,
   ChefHat,
@@ -8,7 +10,7 @@ import {
   Users,
   X,
 } from "lucide-react-native";
-import React from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Modal,
@@ -40,6 +42,7 @@ interface RecipeData {
   tags?: string[];
   difficulty?: string;
   cuisine?: string;
+  isCustom?: boolean;
 }
 
 interface PopUpProps {
@@ -64,35 +67,64 @@ const Popup: React.FC<PopUpProps> = ({
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
 
+  const router = useRouter();
+  const [showMealModal, setShowMealModal] = useState(false);
+
+  const handleAddToLog = () => {
+    setShowMealModal(true);
+  };
+
   if (!visible) return null;
 
   const selectedRecipe = allRecipes.find((recipe) => recipe.id === recipeId);
-
   if (!selectedRecipe) return null;
+  const isCustomRecipe = selectedRecipe?.id?.startsWith('custom-');
 
   const handleBookmarkToggle = () => {
     onToggleBookmark(recipeId);
   };
 
-  const showMealTypeOptions = () => {
-    Alert.alert("Add to Food Log", "Select meal type", [
-      {
-        text: "Breakfast",
-        onPress: () => addToFoodLog("breakfast"),
-      },
-      { text: "Lunch", onPress: () => addToFoodLog("lunch") },
-      { text: "Dinner", onPress: () => addToFoodLog("dinner") },
-      { text: "Snack", onPress: () => addToFoodLog("snack") },
-      { text: "Cancel", style: "cancel" },
-    ]);
+  const handleDelete = async () => {
+    if (!isCustomRecipe) return;
+
+    Alert.alert(
+      "Delete Recipe",
+      `Are you sure you want to delete "${selectedRecipe.title}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const stored = await AsyncStorage.getItem("customRecipes");
+              const recipes = stored ? JSON.parse(stored) : [];
+              const updated = recipes.filter((r: any) => r.id !== selectedRecipe.id);
+              await AsyncStorage.setItem("customRecipes", JSON.stringify(updated));
+
+              Alert.alert("Success", "Recipe deleted successfully");
+              onClose();
+            } catch (error) {
+              console.error("Error deleting recipe:", error);
+              Alert.alert("Error", "Failed to delete recipe");
+            }
+          }
+        }
+      ]
+    );
   };
 
-  const addToFoodLog = async (
-    mealType: "breakfast" | "lunch" | "dinner" | "snack"
-  ) => {
+  const handleEdit = () => {
+    if (!isCustomRecipe) return;
+    onClose(); // Close the modal
+    router.push({
+      pathname: "/(tabs)/food/editRecipeScreen",
+      params: { recipeData: JSON.stringify(selectedRecipe) }
+    });
+  };
+
+  const handleMealTypeSelect = async (mealType: "breakfast" | "lunch" | "dinner" | "snack") => {
     try {
-      const AsyncStorage = require("@react-native-async-storage/async-storage").default;
-      
       const logEntry = {
         id: Date.now().toString(),
         recipeId: selectedRecipe.id,
@@ -108,29 +140,19 @@ const Popup: React.FC<PopUpProps> = ({
         imageUrl: selectedRecipe.imageUrl,
       };
 
-      console.log("Adding entry to food log:", logEntry);
-
       // Load and update daily food log
       const stored = await AsyncStorage.getItem("foodLog");
       const currentLog = stored ? JSON.parse(stored) : [];
       const updatedLog = [logEntry, ...currentLog];
       await AsyncStorage.setItem("foodLog", JSON.stringify(updatedLog));
-      
-      console.log("Daily food log updated. Total entries:", updatedLog.length);
 
-      // Load and update weekly insights data
       const weeklyStored = await AsyncStorage.getItem("weeklyInsightsData");
       const weeklyData = weeklyStored ? JSON.parse(weeklyStored) : [];
       const updatedWeeklyData = [logEntry, ...weeklyData];
       await AsyncStorage.setItem("weeklyInsightsData", JSON.stringify(updatedWeeklyData));
-      
-      console.log("Weekly insights updated. Total entries:", updatedWeeklyData.length);
 
-      Alert.alert(
-        "Added to Food Log",
-        `${selectedRecipe.title} has been logged for ${mealType}`,
-        [{ text: "OK" }]
-      );
+      Alert.alert("Added to Food Log", `${selectedRecipe.title} has been logged for ${mealType}`);
+      setShowMealModal(false);
     } catch (error) {
       console.error("Error adding to food log:", error);
       Alert.alert("Error", "Failed to add to food log");
@@ -333,7 +355,7 @@ const Popup: React.FC<PopUpProps> = ({
 
               {/* Add to Food Log Button */}
               <TouchableOpacity
-                onPress={showMealTypeOptions}
+                onPress={handleAddToLog}
                 style={{
                   backgroundColor: theme.tint,
                   flexDirection: "row",
@@ -586,61 +608,102 @@ const Popup: React.FC<PopUpProps> = ({
                     ))}
                   </View>
                 )}
+
+              {/* Modify */}
+              {selectedRecipe.isCustom ? (
+                <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
+                  <TouchableOpacity style={{
+                    backgroundColor: theme.tint,
+                    borderRadius: 16,
+                    flex: 1,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 14
+                  }}
+                    onPress={() => handleEdit()}
+                  >
+                    <Text style={{color: theme.background}}>
+                      Edit
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={{
+                    backgroundColor: theme.background,
+                    borderRadius: 16,
+                    borderWidth: 2,
+                    borderColor: "#ef4444",
+                    flex: 1,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 14
+                  }}
+                    onPress={() => handleDelete()}
+                  >
+                    <Text style={{ color: "#ef4444" }}>
+                      Delete
+                    </Text>
+
+                  </TouchableOpacity>
+                </View>
+              )
+                :
+                (<View />)
+              }
+
             </View>
           </ScrollView>
         </View>
       </View>
     </Modal>
   );
-};
 
-// Nutrition Item Component
-function NutritionItem({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color: string;
-}) {
-  const colorScheme = useColorScheme() ?? "dark";
-  const theme = Colors[colorScheme];
+  // Nutrition Item Component
+  function NutritionItem({
+    label,
+    value,
+    color,
+  }: {
+    label: string;
+    value: string;
+    color: string;
+  }) {
+    const colorScheme = useColorScheme() ?? "dark";
+    const theme = Colors[colorScheme];
 
-  return (
-    <View
-      style={{
-        flex: 1,
-        minWidth: "45%",
-        backgroundColor: color + "20",
-        borderWidth: 1,
-        borderColor: color + "40",
-        borderRadius: 12,
-        padding: 12,
-        alignItems: "center",
-      }}
-    >
-      <Text
+    return (
+      <View
         style={{
-          color: theme.icon,
-          fontSize: 12,
-          fontWeight: "600",
-          marginBottom: 4,
+          flex: 1,
+          minWidth: "45%",
+          backgroundColor: color + "20",
+          borderWidth: 1,
+          borderColor: color + "40",
+          borderRadius: 12,
+          padding: 12,
+          alignItems: "center",
         }}
       >
-        {label}
-      </Text>
-      <Text
-        style={{
-          color: theme.text,
-          fontSize: 20,
-          fontWeight: "800",
-        }}
-      >
-        {value}
-      </Text>
-    </View>
-  );
+        <Text
+          style={{
+            color: theme.icon,
+            fontSize: 12,
+            fontWeight: "600",
+            marginBottom: 4,
+          }}
+        >
+          {label}
+        </Text>
+        <Text
+          style={{
+            color: theme.text,
+            fontSize: 20,
+            fontWeight: "800",
+          }}
+        >
+          {value}
+        </Text>
+      </View>
+    );
+  }
 }
-
 export default Popup;

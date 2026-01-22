@@ -1,3 +1,4 @@
+import ImagePickerComponent from "@/components/food/ImagePickerComponent";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,12 +38,37 @@ export default function ManualEntryScreen() {
   const [completionTime, onChangeCT] = useState("");
   const [protein, onChangeProtein] = useState("");
   const [carbs, onChangeCarbs] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const AVAILABLE_TAGS = [
+    "Vegetarian",
+    "Vegan",
+    "Gluten-free",
+    "Dairy-free",
+    "Low Carb",
+    "High Protein",
+    "Quick",
+    "Breakfast",
+    "Lunch",
+    "Dinner",
+    "Snack",
+    "Dessert",
+  ];
+
+  const toggleTag = (tag: string) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter((t) => t !== tag));
+    } else {
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
 
   const isFormValid = recipe.trim() !== "" && ingredients.trim() !== "";
 
   const { user } = useAuth();
   const username = user?.email?.split("@")[0] || "User";
-
+  
   const handleSave = async () => {
     if (!isFormValid) {
       Alert.alert(
@@ -67,11 +93,10 @@ export default function ManualEntryScreen() {
     console.log("Saving:", data);
 
     try {
-      // Create the recipe object with full structure matching RecipeCard expectations
       const newRecipe = {
         id: `custom-${Date.now()}`,
         title: data.recipeName,
-        imageUrl: "https://via.placeholder.com/280x160/4ECDC4/FFFFFF?text=Custom+Recipe", // Placeholder image
+        imageUrl: imageUrl || "https://via.placeholder.com/280x160/4ECDC4/FFFFFF?text=Custom+Recipe",
         ingredients: data.ingredients,
         instructions: data.instructions,
         cookingTime: data.completionTime ? `${data.completionTime} min` : "N/A",
@@ -85,21 +110,16 @@ export default function ManualEntryScreen() {
           calories: 0,
           fiber: 0,
         },
-        tags: ["Custom"],
+        tags: selectedTags.length > 0 ? selectedTags : ["Custom"],
         difficulty: "Easy",
         cuisine: "Custom",
         isBookmarked: false,
         isCustom: true,
       };
 
-      // Load existing custom recipes
       const stored = await AsyncStorage.getItem("customRecipes");
       const currentRecipes = stored ? JSON.parse(stored) : [];
-
-      // Add new recipe to the list
       const updatedRecipes = [...currentRecipes, newRecipe];
-
-      // Save back to AsyncStorage
       await AsyncStorage.setItem(
         "customRecipes",
         JSON.stringify(updatedRecipes)
@@ -280,6 +300,108 @@ export default function ManualEntryScreen() {
             />
           </View>
 
+          {/* Image URL */}
+          <View style={{ marginBottom: 20 }}>
+            <Text
+              style={{
+                color: theme.text,
+                marginBottom: 8,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              Image URL (Optional)
+            </Text>
+            <Text
+              style={{
+                color: theme.icon,
+                marginBottom: 8,
+                fontSize: 13,
+              }}
+            >
+              Paste an image URL or leave blank for default
+            </Text>
+            <TextInput
+              value={imageUrl}
+              onChangeText={setImageUrl}
+              placeholder="https://example.com/image.jpg"
+              placeholderTextColor={theme.icon}
+              keyboardType="url"
+              autoCapitalize="none"
+              style={{
+                backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+                color: theme.text,
+                padding: 16,
+                borderRadius: 12,
+                fontSize: 16,
+                borderWidth: 2,
+                borderColor: theme.border,
+              }}
+            />
+          </View>
+
+          {/* Tags Section */}
+          <View style={{ marginBottom: 20 }}>
+            <Text
+              style={{
+                color: theme.text,
+                marginBottom: 8,
+                fontSize: 16,
+                fontWeight: "600",
+              }}
+            >
+              Tags (Optional)
+            </Text>
+            <Text
+              style={{
+                color: theme.icon,
+                marginBottom: 12,
+                fontSize: 13,
+              }}
+            >
+              Select tags that describe your recipe
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 8,
+              }}
+            >
+              {AVAILABLE_TAGS.map((tag) => {
+                const isSelected = selectedTags.includes(tag);
+                return (
+                  <TouchableOpacity
+                    key={tag}
+                    onPress={() => toggleTag(tag)}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      borderWidth: 2,
+                      borderColor: isSelected ? theme.tint : theme.border,
+                      backgroundColor: isSelected
+                        ? theme.tint + "20"
+                        : colorScheme === "dark"
+                          ? "#1c1e22"
+                          : "#f8f9fa",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: isSelected ? theme.tint : theme.text,
+                        fontSize: 14,
+                        fontWeight: isSelected ? "600" : "500",
+                      }}
+                    >
+                      {tag}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
           {/* Nutrition Info Row */}
           <View
             style={{
@@ -381,6 +503,12 @@ export default function ManualEntryScreen() {
               />
             </View>
           </View>
+
+          {/* Image Picker */}
+          <ImagePickerComponent
+            currentImage={imageUrl}
+            onImageSelected={setImageUrl}
+          />
 
           {/* Save Button */}
           <TouchableOpacity
