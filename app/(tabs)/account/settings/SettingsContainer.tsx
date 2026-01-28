@@ -42,7 +42,7 @@ export default function SettingsContainer() {
   // Bluetooth scanning
   const [isScanning, setIsScanning] = useState(false);
   const [discoveredDevices, setDiscoveredDevices] = useState<BluetoothDevice[]>(
-    []
+    [],
   );
 
   useEffect(() => {
@@ -161,7 +161,7 @@ export default function SettingsContainer() {
             ? parseInt(newSettings.you.activityLevel)
             : null,
         },
-        { onConflict: "id" }
+        { onConflict: "id" },
       );
       if (userInfoError) throw userInfoError;
 
@@ -173,7 +173,7 @@ export default function SettingsContainer() {
             user_id: user.id,
             restrictions: newSettings.you.dietaryRestrictions,
           },
-          { onConflict: "user_id" }
+          { onConflict: "user_id" },
         );
       if (dietaryError) throw dietaryError;
 
@@ -195,7 +195,7 @@ export default function SettingsContainer() {
 
   const handleChangePassword = async (
     currentPassword: string,
-    newPassword: string
+    newPassword: string,
   ) => {
     try {
       const { error } = await supabase.auth.updateUser({
@@ -283,7 +283,7 @@ export default function SettingsContainer() {
   };
 
   const handleDiabetesTypeChange = async (
-    diabetesType: "Type 1" | "Type 2" | "Prediabetes" | "None"
+    diabetesType: "Type 1" | "Type 2" | "Prediabetes" | "None",
   ) => {
     const newSettings = {
       ...settings,
@@ -321,7 +321,12 @@ export default function SettingsContainer() {
   };
 
   const handleActivityLevelChange = async (
-    activityLevel: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active"
+    activityLevel:
+      | "Sedentary"
+      | "Light"
+      | "Moderate"
+      | "Active"
+      | "Very Active",
   ) => {
     const newSettings = {
       ...settings,
@@ -332,7 +337,7 @@ export default function SettingsContainer() {
   };
 
   const handleDietaryRestrictionChange = async (
-    dietaryRestrictions: string[]
+    dietaryRestrictions: string[],
   ) => {
     const newSettings = {
       ...settings,
@@ -383,7 +388,7 @@ export default function SettingsContainer() {
     try {
       // Check if device already exists for user by serialNumber
       const existingDevice = settings.connectedDevices.find(
-        (d) => d.serialNumber === device.name // or some unique identifier if available
+        (d) => d.serialNumber === device.name, // or some unique identifier if available
       );
 
       let newDevice: CGMDevice;
@@ -430,8 +435,8 @@ export default function SettingsContainer() {
             isactive: true,
           },
           {
-            onConflict: "unique_user_device", // <-- must be string, not array
-          }
+            onConflict: "id, serialNumber", // <-- must be string, not array
+          },
         );
 
         if (error) console.error(error);
@@ -477,7 +482,7 @@ export default function SettingsContainer() {
     if (!user?.id) return;
     try {
       const newDevices = settings.connectedDevices.map((d) =>
-        d.id === deviceId ? { ...d, name: newName } : d
+        d.id === deviceId ? { ...d, name: newName } : d,
       );
 
       await supabase
@@ -512,7 +517,7 @@ export default function SettingsContainer() {
       }
 
       const newDevices = settings.connectedDevices.filter(
-        (d) => d.id !== deviceId
+        (d) => d.id !== deviceId,
       );
       setSettings({ ...settings, connectedDevices: newDevices });
 
@@ -533,7 +538,7 @@ export default function SettingsContainer() {
       .eq("id", deviceId);
 
     const newDevices = settings.connectedDevices.map((d) =>
-      d.id === deviceId ? { ...d, isConnected: true } : d
+      d.id === deviceId ? { ...d, isConnected: true } : d,
     );
     setSettings({ ...settings, connectedDevices: newDevices });
   };
@@ -545,7 +550,7 @@ export default function SettingsContainer() {
       .eq("id", deviceId);
 
     const newDevices = settings.connectedDevices.map((d) =>
-      d.id === deviceId ? { ...d, isConnected: false } : d
+      d.id === deviceId ? { ...d, isConnected: false } : d,
     );
     setSettings({ ...settings, connectedDevices: newDevices });
   };
@@ -566,11 +571,10 @@ export default function SettingsContainer() {
       .eq("id", deviceId);
 
     const newDevices = settings.connectedDevices.map((d) =>
-      d.id === deviceId ? { ...d, lastSync: new Date(now) } : d
+      d.id === deviceId ? { ...d, lastSync: new Date(now) } : d,
     );
     setSettings({ ...settings, connectedDevices: newDevices });
   };
-
 
   return (
     <SettingsScreen
