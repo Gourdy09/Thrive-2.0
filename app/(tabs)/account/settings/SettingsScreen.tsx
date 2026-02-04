@@ -54,13 +54,21 @@ interface SettingsScreenProps {
   onGenderChange: (gender: "Male" | "Female") => void;
   onRaceChange: (race: string) => void;
   onDiabetesTypeChange: (
-    type: "Type 1" | "Type 2" | "Prediabetes" | "None"
+    type: "Type 1" | "Type 2" | "Prediabetes" | "None",
+  ) => void;
+  onInsulinChange: (insulin: boolean) => void;
+  onInsulinTypeChange: (
+    type:
+      | "Rapid-Acting"
+      | "Short-Acting (Regular)"
+      | "Intermediate-Acting"
+      | "Long-Acting",
   ) => void;
   onBaselineGlucoseChange: (glucose: string) => void;
   onHeightChange: (height: string) => void;
   onWeightChange: (weight: string) => void;
   onActivityLevelChange: (
-    level: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active"
+    level: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active",
   ) => void;
   onDietaryRestrictionChange: (restrictions: string[]) => void;
 
@@ -156,6 +164,10 @@ export default function SettingsScreen(props: SettingsScreenProps) {
           onRaceChange={props.onRaceChange}
           diabetesType={props.settings.you.diabetesType}
           onDiabetesTypeChange={props.onDiabetesTypeChange}
+          insulin={props.settings.you.insulin}
+          onInsulinChange={props.onInsulinChange}
+          insulinType={props.settings.you.insulinType}
+          onInsulinTypeChange={props.onInsulinTypeChange}
           baselineGlucose={props.settings.you.baselineGlucose}
           onBaselineGlucoseChange={props.onBaselineGlucoseChange}
           height={props.settings.you.height}
@@ -189,7 +201,7 @@ export default function SettingsScreen(props: SettingsScreenProps) {
         />
 
         {/* Data & Privacy Section */}
-        <DataPrivacySection/>
+        <DataPrivacySection />
       </ScrollView>
 
       {/* Modals */}

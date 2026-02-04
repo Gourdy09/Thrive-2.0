@@ -31,14 +31,29 @@ interface YouSectionProps {
   onHeightChange: (height: string) => void;
   activityLevel: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active";
   onActivityLevelChange: (
-    level: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active"
+    level: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active",
   ) => void;
   diabetesType: "Type 1" | "Type 2" | "Prediabetes" | "None";
   onDiabetesTypeChange: (
-    type: "Type 1" | "Type 2" | "Prediabetes" | "None"
+    type: "Type 1" | "Type 2" | "Prediabetes" | "None",
   ) => void;
   dietaryRestrictions: string[];
   onDietaryRestrictionChange: (restrictions: string[]) => void;
+  insulin: boolean;
+  onInsulinChange: (insulin: boolean) => void;
+  insulinType:
+    | "Rapid-Acting"
+    | "Short-Acting (Regular)"
+    | "Intermediate-Acting"
+    | "Long-Acting"
+    | null;
+  onInsulinTypeChange: (
+    type:
+      | "Rapid-Acting"
+      | "Short-Acting (Regular)"
+      | "Intermediate-Acting"
+      | "Long-Acting",
+  ) => void;
 }
 
 const ETHNICITIES = [
@@ -78,8 +93,8 @@ function AnimatedDropdown({
   theme,
 }: {
   label: string;
-  value: string;
   options: string[];
+  value: string | null;
   onSelect: (value: string) => void;
   colorScheme: string;
   theme: any;
@@ -246,6 +261,10 @@ export default function YouSection({
   onDiabetesTypeChange,
   dietaryRestrictions,
   onDietaryRestrictionChange,
+  insulin,
+  onInsulinChange,
+  insulinType,
+  onInsulinTypeChange,
 }: YouSectionProps) {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
@@ -270,7 +289,7 @@ export default function YouSection({
 
   const removeRestriction = (restriction: string) => {
     onDietaryRestrictionChange(
-      dietaryRestrictions.filter((r) => r !== restriction)
+      dietaryRestrictions.filter((r) => r !== restriction),
     );
   };
 
@@ -443,7 +462,54 @@ export default function YouSection({
           colorScheme={colorScheme}
           theme={theme}
         />
-
+        {/* Insulin */}
+        <View style={{ marginBottom: 20 }}>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: "600",
+              color: theme.text,
+              marginBottom: 12,
+            }}
+          >
+            Do you take insulin?
+          </Text>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <OptionButton
+              label="Yes"
+              selected={insulin === true}
+              onPress={() => onInsulinChange(true)}
+            />
+            <OptionButton
+              label="No"
+              selected={insulin === false}
+              onPress={() => onInsulinChange(false)}
+            />
+            {insulin && (
+              <AnimatedDropdown
+                label="Insulin Type"
+                value={insulinType}
+                options={[
+                  "Rapid-Acting",
+                  "Short-Acting (Regular)",
+                  "Intermediate-Acting",
+                  "Long-Acting",
+                ]}
+                onSelect={(val) =>
+                  onInsulinTypeChange(
+                    val as
+                      | "Rapid-Acting"
+                      | "Short-Acting (Regular)"
+                      | "Intermediate-Acting"
+                      | "Long-Acting",
+                  )
+                }
+                colorScheme={colorScheme}
+                theme={theme}
+              />
+            )}
+          </View>
+        </View>
         {/* Baseline Blood Glucose */}
         <View style={{ marginBottom: 20 }}>
           <Text

@@ -21,6 +21,12 @@ export interface YouSettings {
   weight: string;
   activityLevel: "Sedentary" | "Light" | "Moderate" | "Active" | "Very Active";
   dietaryRestrictions: string[];
+  insulin: boolean;
+  insulinType:
+    | "Rapid-Acting"
+    | "Short-Acting (Regular)"
+    | "Intermediate-Acting"
+    | "Long-Acting";
 }
 
 export interface AppSettings {

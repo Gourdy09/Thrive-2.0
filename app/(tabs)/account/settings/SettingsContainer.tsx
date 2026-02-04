@@ -26,6 +26,8 @@ export default function SettingsContainer() {
       weight: "",
       activityLevel: "Moderate",
       dietaryRestrictions: [],
+      insulin: false,
+      insulinType: "Intermediate-Acting",
     },
   });
 
@@ -119,7 +121,10 @@ export default function SettingsContainer() {
           // dietaryData is an array from the restrictions column, or empty array
           dietaryRestrictions:
             dietaryData?.restrictions ?? prev.you.dietaryRestrictions,
+          insulin: userInfoData?.insulin ?? prev.you.insulin,
+          insulinType: userInfoData?.insulinType ?? prev.you.insulinType,
         },
+
         connectedDevices: devices,
       }));
     } catch (error) {
@@ -160,6 +165,8 @@ export default function SettingsContainer() {
           activitylevel: newSettings.you.activityLevel
             ? parseInt(newSettings.you.activityLevel)
             : null,
+          insulin: newSettings.you.insulin,
+          insulinType: newSettings.you.insulinType,
         },
         { onConflict: "id" },
       );
@@ -292,7 +299,28 @@ export default function SettingsContainer() {
     setSettings(newSettings);
     await saveSettings(newSettings);
   };
-
+  const handleInsulinChange = async (insulin: boolean) => {
+    const newSettings = {
+      ...settings,
+      you: { ...settings.you, insulin },
+    };
+    setSettings(newSettings);
+    await saveSettings(newSettings);
+  };
+  const handleInsulinTypeChange = async (
+    insulinType:
+      | "Rapid-Acting"
+      | "Short-Acting (Regular)"
+      | "Intermediate-Acting"
+      | "Long-Acting",
+  ) => {
+    const newSettings = {
+      ...settings,
+      you: { ...settings.you, insulinType },
+    };
+    setSettings(newSettings);
+    await saveSettings(newSettings);
+  };
   const handleBaselineGlucoseChange = async (baselineGlucose: string) => {
     const newSettings = {
       ...settings,
@@ -605,6 +633,8 @@ export default function SettingsContainer() {
       onGenderChange={handleGenderChange}
       onRaceChange={handleRaceChange}
       onDiabetesTypeChange={handleDiabetesTypeChange}
+      onInsulinChange={handleInsulinChange}
+      onInsulinTypeChange={handleInsulinTypeChange}
       onBaselineGlucoseChange={handleBaselineGlucoseChange}
       onHeightChange={handleHeightChange}
       onWeightChange={handleWeightChange}
