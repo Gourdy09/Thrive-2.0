@@ -64,7 +64,7 @@ const Popup: React.FC<PopUpProps> = ({
   allRecipes,
   isBookmarked,
   onToggleBookmark,
-  onRecipeDeleted
+  onRecipeDeleted,
 }) => {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
@@ -80,7 +80,7 @@ const Popup: React.FC<PopUpProps> = ({
 
   const selectedRecipe = allRecipes.find((recipe) => recipe.id === recipeId);
   if (!selectedRecipe) return null;
-  const isCustomRecipe = selectedRecipe?.id?.startsWith('custom-');
+  const isCustomRecipe = selectedRecipe?.id?.startsWith("custom-");
 
   const handleBookmarkToggle = () => {
     onToggleBookmark(recipeId);
@@ -101,8 +101,13 @@ const Popup: React.FC<PopUpProps> = ({
             try {
               const stored = await AsyncStorage.getItem("customRecipes");
               const recipes = stored ? JSON.parse(stored) : [];
-              const updated = recipes.filter((r: any) => r.id !== selectedRecipe.id);
-              await AsyncStorage.setItem("customRecipes", JSON.stringify(updated));
+              const updated = recipes.filter(
+                (r: any) => r.id !== selectedRecipe.id,
+              );
+              await AsyncStorage.setItem(
+                "customRecipes",
+                JSON.stringify(updated),
+              );
               if (onRecipeDeleted) {
                 onRecipeDeleted();
               }
@@ -113,9 +118,9 @@ const Popup: React.FC<PopUpProps> = ({
               console.error("Error deleting recipe:", error);
               Alert.alert("Error", "Failed to delete recipe");
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
@@ -129,11 +134,14 @@ const Popup: React.FC<PopUpProps> = ({
     onClose();
     router.push({
       pathname: "/(tabs)/food/editRecipeScreen",
-      params: { recipeData: JSON.stringify(selectedRecipe) }
+      params: { recipeData: JSON.stringify(selectedRecipe) },
     });
   };
 
-  const handleMealTypeSelect = async (mealType: "breakfast" | "lunch" | "dinner" | "snack") => {
+  const handleMealTypeSelect = async (
+    mealType: "breakfast" | "lunch" | "dinner" | "snack",
+    isLiquid: boolean,
+  ) => {
     try {
       const logEntry = {
         id: Date.now().toString(),
@@ -145,9 +153,11 @@ const Popup: React.FC<PopUpProps> = ({
           protein: selectedRecipe.nutrition?.protein || 0,
           carbs: selectedRecipe.nutrition?.carbs || 0,
           calories: selectedRecipe.nutrition?.calories || 0,
-          fiber: selectedRecipe.nutrition?.fiber || 0
+          fiber: selectedRecipe.nutrition?.fiber || 0,
+          fat: selectedRecipe.nutrition?.fat || 0,
         },
         imageUrl: selectedRecipe.imageUrl,
+        is_liquid: isLiquid,
       };
 
       // Load and update daily food log
@@ -159,7 +169,10 @@ const Popup: React.FC<PopUpProps> = ({
       const weeklyStored = await AsyncStorage.getItem("weeklyInsightsData");
       const weeklyData = weeklyStored ? JSON.parse(weeklyStored) : [];
       const updatedWeeklyData = [logEntry, ...weeklyData];
-      await AsyncStorage.setItem("weeklyInsightsData", JSON.stringify(updatedWeeklyData));
+      await AsyncStorage.setItem(
+        "weeklyInsightsData",
+        JSON.stringify(updatedWeeklyData),
+      );
       setShowMealModal(false);
     } catch (error) {
       console.error("Error adding to food log:", error);
@@ -617,45 +630,42 @@ const Popup: React.FC<PopUpProps> = ({
 
               {/* Modify */}
               {selectedRecipe.isCustom ? (
-                <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
-                  <TouchableOpacity style={{
-                    backgroundColor: theme.tint,
-                    borderRadius: 16,
-                    flex: 1,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: 14
-                  }}
+                <View
+                  style={{ display: "flex", flexDirection: "row", gap: 16 }}
+                >
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: theme.tint,
+                      borderRadius: 16,
+                      flex: 1,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 14,
+                    }}
                     onPress={() => handleEdit()}
                   >
-                    <Text style={{ color: theme.background }}>
-                      Edit
-                    </Text>
+                    <Text style={{ color: theme.background }}>Edit</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={{
-                    backgroundColor: theme.background,
-                    borderRadius: 16,
-                    borderWidth: 2,
-                    borderColor: "#ef4444",
-                    flex: 1,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: 14
-                  }}
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: theme.background,
+                      borderRadius: 16,
+                      borderWidth: 2,
+                      borderColor: "#ef4444",
+                      flex: 1,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 14,
+                    }}
                     onPress={() => handleDelete()}
                   >
-                    <Text style={{ color: "#ef4444" }}>
-                      Delete
-                    </Text>
-
+                    <Text style={{ color: "#ef4444" }}>Delete</Text>
                   </TouchableOpacity>
                 </View>
-              )
-                :
-                (<View />)
-              }
-
+              ) : (
+                <View />
+              )}
             </View>
           </ScrollView>
         </View>
@@ -666,7 +676,6 @@ const Popup: React.FC<PopUpProps> = ({
         recipeName={selectedRecipe?.title || "Recipe"}
         onSelect={handleMealTypeSelect}
       />
-
     </Modal>
   );
 
@@ -718,5 +727,5 @@ const Popup: React.FC<PopUpProps> = ({
       </View>
     );
   }
-}
+};
 export default Popup;

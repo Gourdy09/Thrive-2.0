@@ -1,18 +1,21 @@
 import { Colors } from "@/constants/Colors";
 import { Coffee, Moon, Sunrise, Sunset, X } from "lucide-react-native";
-import React from "react";
+import React, { useState } from "react";
 import {
-    Modal,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  Modal,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from "react-native";
 
 interface MealTypeModalProps {
   visible: boolean;
   onClose: () => void;
-  onSelect: (mealType: "breakfast" | "lunch" | "dinner" | "snack") => void;
+  onSelect: (
+    mealType: "breakfast" | "lunch" | "dinner" | "snack",
+    isLiquid: boolean,
+  ) => void;
   recipeName: string;
 }
 
@@ -24,7 +27,7 @@ export default function MealTypeModal({
 }: MealTypeModalProps) {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
-
+  const [isLiquid, setIsLiquid] = useState(false);
   const mealTypes = [
     {
       id: "breakfast" as const,
@@ -74,6 +77,7 @@ export default function MealTypeModal({
             paddingBottom: 40,
           }}
         >
+          {/* Header */}
           <View
             style={{
               flexDirection: "row",
@@ -88,13 +92,7 @@ export default function MealTypeModal({
               >
                 Add to Food Log
               </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: theme.icon,
-                  marginTop: 4,
-                }}
-              >
+              <Text style={{ fontSize: 14, color: theme.icon, marginTop: 4 }}>
                 Select meal type
               </Text>
             </View>
@@ -103,6 +101,7 @@ export default function MealTypeModal({
             </TouchableOpacity>
           </View>
 
+          {/* Recipe Info */}
           <View
             style={{
               backgroundColor: theme.cardBackground,
@@ -129,13 +128,56 @@ export default function MealTypeModal({
             </Text>
           </View>
 
+          {/* Is Liquid Toggle */}
+          <View
+            style={{
+              backgroundColor: theme.cardBackground,
+              borderRadius: 16,
+              padding: 16,
+              marginBottom: 20,
+              borderWidth: 2,
+              borderColor: theme.border,
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{ fontSize: 14, fontWeight: "600", color: theme.text }}
+            >
+              This is a liquid/beverage
+            </Text>
+            <TouchableOpacity
+              onPress={() => setIsLiquid(!isLiquid)}
+              style={{
+                width: 50,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: isLiquid ? theme.tint : theme.border,
+                justifyContent: "center",
+                paddingHorizontal: 2,
+              }}
+            >
+              <View
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 12,
+                  backgroundColor: "white",
+                  alignSelf: isLiquid ? "flex-end" : "flex-start",
+                }}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Meal Type Buttons */}
           <View style={{ gap: 12 }}>
             {mealTypes.map((type) => {
               const Icon = type.icon;
               return (
                 <TouchableOpacity
                   key={type.id}
-                  onPress={() => onSelect(type.id)}
+                  onPress={() => onSelect(type.id, isLiquid)}
                   style={{
                     backgroundColor:
                       colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
@@ -188,7 +230,12 @@ export default function MealTypeModal({
 }
 
 // components/modals/PaymentAlertModal.tsx
-import { AlertTriangle, CheckCircle2, CreditCard, XCircle } from "lucide-react-native";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  CreditCard,
+  XCircle,
+} from "lucide-react-native";
 
 interface PaymentAlertModalProps {
   visible: boolean;
@@ -215,9 +262,7 @@ export function PaymentAlertModal({
       icon: AlertTriangle,
       color: "#FFA07A",
       title: "Payment Due Soon",
-      message: `Your payment of $${amount.toFixed(
-        2
-      )} is due in 3 days.`,
+      message: `Your payment of $${amount.toFixed(2)} is due in 3 days.`,
       actionText: "View Details",
     },
     paid: {
@@ -232,7 +277,7 @@ export function PaymentAlertModal({
       color: "#EF4444",
       title: "Payment Failed",
       message: `Your payment of $${amount.toFixed(
-        2
+        2,
       )} was declined. Please update your payment method.`,
       actionText: "Update Payment",
     },
@@ -322,9 +367,7 @@ export function PaymentAlertModal({
                 marginBottom: 12,
               }}
             >
-              <Text
-                style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}
-              >
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>
                 {current.actionText}
               </Text>
             </TouchableOpacity>
@@ -333,8 +376,7 @@ export function PaymentAlertModal({
           <TouchableOpacity
             onPress={onClose}
             style={{
-              backgroundColor:
-                colorScheme === "dark" ? "#2a2d32" : "#f8f9fa",
+              backgroundColor: colorScheme === "dark" ? "#2a2d32" : "#f8f9fa",
               padding: 16,
               borderRadius: 12,
               alignItems: "center",

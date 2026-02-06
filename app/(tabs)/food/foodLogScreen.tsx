@@ -40,6 +40,7 @@ interface FoodLogEntry {
     fiber: number;
   };
   imageUrl?: string;
+  is_liquid: boolean;
 }
 
 export default function FoodLogScreen() {
@@ -88,7 +89,7 @@ export default function FoodLogScreen() {
   useFocusEffect(
     useCallback(() => {
       loadFoodLog();
-    }, [])
+    }, []),
   );
 
   const saveFoodLog = async (log: FoodLogEntry[]) => {
@@ -114,7 +115,7 @@ export default function FoodLogScreen() {
             await saveFoodLog(newLog);
           },
         },
-      ]
+      ],
     );
   };
 
@@ -169,9 +170,9 @@ export default function FoodLogScreen() {
         protein: acc.protein + (entry.nutrition.protein || 0),
         carbs: acc.carbs + (entry.nutrition.carbs || 0),
         calories: acc.calories + (entry.nutrition.calories || 0),
-        fiber: acc.fiber + (entry.nutrition.fiber || 0)
+        fiber: acc.fiber + (entry.nutrition.fiber || 0),
       }),
-      { protein: 0, carbs: 0, calories: 0, fiber: 0 }
+      { protein: 0, carbs: 0, calories: 0, fiber: 0 },
     );
   };
 
@@ -380,7 +381,13 @@ export default function FoodLogScreen() {
                             })}
                           </Text>
                         </View>
-                        <View style={{ flexDirection: "row", gap: 16, flexWrap: "wrap" }}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            gap: 16,
+                            flexWrap: "wrap",
+                          }}
+                        >
                           <Text style={{ fontSize: 12, color: theme.icon }}>
                             Protein: {Math.round(entry.nutrition.protein)}g
                           </Text>
@@ -417,11 +424,10 @@ export default function FoodLogScreen() {
                       </TouchableOpacity>
                     </View>
                   </View>
-
                 ))}
               </View>
             );
-          }
+          },
         )}
 
         {foodLog.length === 0 && (
