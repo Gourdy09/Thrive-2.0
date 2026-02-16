@@ -6,7 +6,7 @@ from ai.models.glucose.dynamics import step_glucose
 
 def simulate_glucose(
     G0: float,
-    time: torch.Tensor,
+    time,
     meals: List[Dict[str, Any]],
     activity: List[Dict[str, Any]],
     insulin_medications: List[Dict[str, Any]],
@@ -15,17 +15,27 @@ def simulate_glucose(
     insulin: bool,
     insulin_type: str | None,
 ) -> torch.Tensor:
-    G = [G0]
+    """
+    Simulate glucose trajectory over time.
+    
+    Returns TENSOR to maintain gradient flow for training.
+    """
+    
     if isinstance(time, list):
         time = torch.tensor(time, dtype=torch.float32)
+    elif not isinstance(time, torch.Tensor):
+        time = torch.tensor([time], dtype=torch.float32)
+    
+    G = [torch.tensor(G0, dtype=torch.float32)]
     
     for i in range(len(time) - 1):
         current_time = time[i].item() if isinstance(time[i], torch.Tensor) else time[i]
-        bN = 1 if 22 <= current_time or current_time < 6 else 0
         
-        # Pass raw data - let step_glucose compute effects
+        bN = 1 if (22 <= current_time or current_time < 6) else 0
+        
+        # Step glucose forward 
         G_next = step_glucose(
-            G_tilde=G[i],
+            G_tilde=G[i].item() if isinstance(G[i], torch.Tensor) else G[i],
             t=current_time,
             meals=meals,
             activity=activity,
@@ -37,6 +47,9 @@ def simulate_glucose(
             params=params
         )
         
-        G.append(G_next.item() if isinstance(G_next, torch.Tensor) else G_next)
+        G.append(G_next)
     
-    return torch.tensor(G, dtype=torch.float32)
+    # Stack all glucose values into single tensor
+    result = torch.cat([g.unsqueeze(0) if g.dim() == 0 else g for g in G])
+    
+    return result

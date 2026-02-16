@@ -1,8 +1,8 @@
 import torch 
-import math
-from ai.models.glucose.absorption import carbs_absorption
+from ai.models.glucose.absorption import carbs_absorption, total_carb_effect
 from ai.models.glucose.medication import calculate_insulin_effect
 from ai.models.user.parameters import UserParams
+
 
 def step_glucose(
     G_tilde: float,
@@ -15,33 +15,24 @@ def step_glucose(
     insulin_type: str | None,
     bN: int,  # 1 if night, 0 if day
     params: UserParams
-) -> float:
+) -> torch.Tensor:
     """
+    Single step glucose update - returns TENSOR for gradient flow
+    
     G_{t+1} = G_t + β1·carbs_t(1 + ρ·Liquid_t)
                   + β2·bN_t
                   + β3·(carbS_t · bN_t)
                   - β4·iE_t
                   + β5·activity_t
-                  add the rest after we get the sensor 
+                  + β(6-9) later on 
                   + ε_t
     """
     
-    carbs_t = sum(
-        carbs_absorption(
-            carbs=m["carbs"],
-            t_meal=m["t_meal"],
-            t=t,
-            fiber_ratio=m.get("fiber_ratio", 0.0),
-            is_liquid=m.get("is_liquid", False),
-            fatprotein_i=m.get("fatprotein", 0.0),
-            params=params
-        )
-        for m in meals
-    )
+    carbs_t = total_carb_effect(t, meals, params)
     
-    Liquid_t = 1.0 if any(m.get("is_liquid", False) for m in meals) else 0.0
+    Liquid_t = torch.tensor(1.0 if any(m.get("is_liquid", False) for m in meals) else 0.0, dtype=torch.float32)
     
-    carbS_t = carbs_t / 100.0  
+    carbS_t = carbs_t / 100.0
     
     iE_t = calculate_insulin_effect(
         t=t,
@@ -54,21 +45,21 @@ def step_glucose(
         meds=other_medications
     )
     
-    activity_t = sum(
-        a.get("intensity", 0.0)  # or more complex activity_effect() function
-        for a in activity
-    )
+    # Activity effect
+    activity_t = torch.tensor(sum(a.get("intensity", 0.0) for a in activity), dtype=torch.float32) # chnage later 
     
-    # ε_t: noise term
-    epsilon_t = torch.randn(1).item() * params.sigma  # sigma = noise std dev
+    # Noise term
+    epsilon_t = torch.randn(1, dtype=torch.float32) * params.sigma
+    
+    bN_tensor = torch.tensor(float(bN), dtype=torch.float32)
     
     delta_G = (
         params.beta1 * carbs_t * (1.0 + params.rho * Liquid_t)
-        + params.beta2 * bN
-        + params.beta3 * (carbS_t * bN)
+        + params.beta2 * bN_tensor
+        + params.beta3 * (carbS_t * bN_tensor)
         - params.beta4 * iE_t
         + params.beta5 * activity_t
         + epsilon_t
     )
-    
-    return G_tilde + delta_G
+
+    return torch.tensor(G_tilde, dtype=torch.float32) + delta_G

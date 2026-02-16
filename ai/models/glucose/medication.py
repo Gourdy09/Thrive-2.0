@@ -1,9 +1,9 @@
 import torch
 from typing import Any, List, Dict
 from ai.models.user.parameters import UserParams
-from ai.models.glucose.absorptions_util import getk_absi
+from ai.models.glucose.absorptions_util import getK_abs_i
 from components.ai_medication.med_durationmodel import med_durationModel
-params = UserParams()
+
 
 def calculate_insulin_effect(
     t: float,
@@ -13,15 +13,14 @@ def calculate_insulin_effect(
     bN: int,
     meals: List[Dict[str, Any]],
     params: UserParams,
-    meds:  List[Dict[str, Any]],
-) -> float:
-    """Calculate total insulin effect (endogenous + exogenous + medication)"""
+    meds: List[Dict[str, Any]],
+) -> torch.Tensor:
     endo = calculate_endo_insulin(t, params, bN, meals)
-    med = calculate_med_effect(meds,t)
+    med = calculate_med_effect(meds, t)
     if insulin and insulin_type:
         exo = calculate_exo_insulin(t, insulin_type, insulin_medications, params)
     else:
-        exo = 0.0
+        exo = torch.tensor(0.0, dtype=torch.float32)
     
     return endo + exo + med
 
@@ -31,9 +30,8 @@ def calculate_endo_insulin(
     params: UserParams,
     bN: int,
     meals: List[Dict[str, Any]],
-) -> float:
-    """Calculate endogenous insulin from carb absorption"""
-    total_endo = 0.0
+) -> torch.Tensor:
+    total_endo = torch.tensor(0.0, dtype=torch.float32)
     
     for meal in meals:
         carbs = meal["carbs"]
@@ -42,30 +40,31 @@ def calculate_endo_insulin(
         is_liquid = meal.get("is_liquid", False)
         fatprotein = meal.get("fatprotein", 0.1)
         
-        k_abs_i = getk_absi(
+        k_abs_i = getK_abs_i(
             params.k_base,
             params.su,
             params.alpha,
             fiber_ratio,
-            params.eta_liq,
+            params.eta_liq_u,
             is_liquid,
             params.eta_fp_u,
             fatprotein,
         )
         
         delta_t = max(0.0, t - t_meal)
+        delta_t_tensor = torch.tensor(delta_t, dtype=torch.float32)
         
         # Absorption kernel: e^(-k_abs_i * delta_t)
-        exp_term = torch.exp(torch.tensor(-k_abs_i * delta_t))
+        exp_term = torch.exp(-delta_t_tensor * k_abs_i)
         
         endo_insulin = (
-            carbs
+            torch.tensor(carbs, dtype=torch.float32)
             * k_abs_i
-            * (1.0 - exp_term.item())
-            * (1.0 - torch.sigmoid(torch.tensor(params.delta_u)).item() * bN)
+            * (1.0 - exp_term)
+            * (1.0 - torch.sigmoid(params.delta_u) * torch.tensor(float(bN), dtype=torch.float32))
         )
         
-        total_endo += endo_insulin
+        total_endo = total_endo + endo_insulin
     
     return total_endo
 
@@ -75,9 +74,8 @@ def calculate_exo_insulin(
     insulin_type: str,
     insulin_medications: List[Dict[str, Any]],
     params: UserParams,
-) -> float:
-    """Calculate exogenous insulin effect"""
-    total_exo = 0.0
+) -> torch.Tensor:
+    total_exo = torch.tensor(0.0, dtype=torch.float32)
     
     for med in insulin_medications:
         units = med["units"]
@@ -93,49 +91,60 @@ def calculate_exo_insulin(
         else:  
             insulin_effect = get_long_acting(delta_t, units)
         
-        total_exo += insulin_effect
+        total_exo = total_exo + insulin_effect
     
     return total_exo
 
 
-def get_rapid_acting(delta_t: float, units: float, params: UserParams) -> float:
+def get_rapid_acting(delta_t: float, units: float, params: UserParams) -> torch.Tensor:
     if delta_t < 0 or delta_t > 5.0:  
-        return 0.0
+        return torch.tensor(0.0, dtype=torch.float32)
     
-    k = 2.0  
-    effect = units * delta_t * torch.exp(torch.tensor(-k * delta_t))
-    return effect.item()
+    k = 2.0
+    delta_t_tensor = torch.tensor(delta_t, dtype=torch.float32)
+    units_tensor = torch.tensor(units, dtype=torch.float32)
+    
+    effect = units_tensor * delta_t_tensor * torch.exp(-k * delta_t_tensor)
+    return effect
 
 
-def get_short_acting(delta_t: float, units: float) -> float:
+def get_short_acting(delta_t: float, units: float) -> torch.Tensor:
     if delta_t < 0 or delta_t > 8.0:
-        return 0.0
+        return torch.tensor(0.0, dtype=torch.float32)
     
-    effect = units * (delta_t / 2.0) * torch.exp(torch.tensor(-0.5 * delta_t))
-    return effect.item()
+    delta_t_tensor = torch.tensor(delta_t, dtype=torch.float32)
+    units_tensor = torch.tensor(units, dtype=torch.float32)
+    
+    effect = units_tensor * (delta_t_tensor / 2.0) * torch.exp(-0.5 * delta_t_tensor)
+    return effect
 
 
-def get_intermediate(delta_t: float, units: float, params: UserParams) -> float:
+def get_intermediate(delta_t: float, units: float, params: UserParams) -> torch.Tensor:
     if delta_t < 0 or delta_t > 12.0: 
-        return 0.0
+        return torch.tensor(0.0, dtype=torch.float32)
     
+    delta_t_tensor = torch.tensor(delta_t, dtype=torch.float32)
+    units_tensor = torch.tensor(units, dtype=torch.float32)
     t_peak = 4.0
-    numerator = (delta_t / t_peak) ** 2
-    denominator = 1.0 + (delta_t / t_peak) ** 2
-    effect = units * (numerator / denominator) * torch.exp(torch.tensor(-delta_t / 12.0))
-    return effect.item()
+    
+    numerator = (delta_t_tensor / t_peak) ** 2
+    denominator = 1.0 + (delta_t_tensor / t_peak) ** 2
+    effect = units_tensor * (numerator / denominator) * torch.exp(-delta_t_tensor / 12.0)
+    return effect
 
 
-def get_long_acting(delta_t: float, units: float) -> float:
+def get_long_acting(delta_t: float, units: float) -> torch.Tensor:
     if 0 <= delta_t <= 24.0:
-        return units / 24.0
+        return torch.tensor(units / 24.0, dtype=torch.float32)
     else:
-        return 0.0
+        return torch.tensor(0.0, dtype=torch.float32)
+
+
 def calculate_med_effect(
-    t: float,  
     meds: List[Dict[str, Any]],
-) -> float:
-    total_med = 0.0
+    t: float,  
+) -> torch.Tensor:
+    total_med = torch.tensor(0.0, dtype=torch.float32)
     
     for med in meds:
         dose = med.get("dose", 0)
@@ -151,9 +160,12 @@ def calculate_med_effect(
         
         # Gaussian decay centered at t_k: exp(-((t - t_k) / w_k)^2)
         delta_t = t - t_k
-        effect_kernel = torch.exp(-((delta_t / w_k) ** 2))
+        delta_t_tensor = torch.tensor(delta_t, dtype=torch.float32)
+        w_k_tensor = torch.tensor(w_k, dtype=torch.float32)
         
-        med_effect = dose * effect_kernel.item()
-        total_med += med_effect
+        effect_kernel = torch.exp(-((delta_t_tensor / w_k_tensor) ** 2))
+        
+        med_effect = torch.tensor(dose, dtype=torch.float32) * effect_kernel
+        total_med = total_med + med_effect
     
     return total_med

@@ -1,0 +1,10 @@
+{
+  "model_name": "glucose_model",
+  "num_epochs": 10,
+  "best_val_loss": 402.2389176312615,
+  "test_loss": 342.54858719675167,
+  "final_train_loss": 416.22411562448525,
+  "learning_rate": 0.01,
+  "early_stopping": false,
+  "timestamp": "2026-02-13T18:13:24.406398"
+}

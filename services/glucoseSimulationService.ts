@@ -54,7 +54,7 @@ const fetchInsulinMedication = async (
       const units = dosageMatch ? parseFloat(dosageMatch[1]) : 0;
 
       const { data: alerts, error: alertsError } = await supabase
-        .from("medicine_alerts") // Changed from medication_alerts
+        .from("medicine_alerts")
         .select("time")
         .eq("medication_id", med.id)
         .eq("enabled", true);
@@ -62,7 +62,7 @@ const fetchInsulinMedication = async (
       if (alertsError) throw alertsError;
 
       for (const alert of alerts || []) {
-        const [hour, minutes] = alert.time.split(":").map(Number); // Changed .mao to .map
+        const [hour, minutes] = alert.time.split(":").map(Number);
         insulinMeds.push({
           units,
           time: hour + minutes / 60,

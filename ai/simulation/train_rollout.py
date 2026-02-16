@@ -4,14 +4,14 @@ from ai.models.user.parameters import UserParams
 
 # 1 sequence 
 G_obs = torch.tensor([...]) # your glucose reading 
-carb_effect = torch.tenosr([...])
+carb_effect = torch.tensor([...])
 circadian_offset = torch.tensor([...])
 night_penalty = torch.tensor([...])
 insulin_effect = torch.tensor([...])
 activity_effect = torch.tensor([...])
 
 params = UserParams()
-G_tilde = torch.zeros(1) # start at baseline 
+G_tilde = torch.zeros(1) 
 predictions= [] 
 
 for t in range(len(G_obs)):

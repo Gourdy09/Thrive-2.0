@@ -4,7 +4,7 @@ import { ActivityIndicator, View } from "react-native";
 
 export default function Index() {
   const { user, loading, isFirstLaunch } = useAuth();
-  
+
   // Show loading spinner while checking auth state
   if (loading) {
     return (
@@ -28,4 +28,3 @@ export default function Index() {
   // Logged in = go to dashboard
   return <Redirect href="./(tabs)/dashboard" />;
 }
-
