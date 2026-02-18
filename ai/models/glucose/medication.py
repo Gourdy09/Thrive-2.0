@@ -17,7 +17,7 @@ def calculate_insulin_effect(
 ) -> torch.Tensor:
     endo = calculate_endo_insulin(t, params, bN, meals)
     med = calculate_med_effect(meds, t)
-    if insulin and insulin_type:
+    if insulin and insulin_type and insulin_medications:
         exo = calculate_exo_insulin(t, insulin_type, insulin_medications, params)
     else:
         exo = torch.tensor(0.0, dtype=torch.float32)
@@ -32,10 +32,15 @@ def calculate_endo_insulin(
     meals: List[Dict[str, Any]],
 ) -> torch.Tensor:
     total_endo = torch.tensor(0.0, dtype=torch.float32)
+
+    if not meals:
+        return total_endo
     
     for meal in meals:
-        carbs = meal["carbs"]
-        t_meal = meal["t_meal"]
+        carbs =  meal.get("carbs", 0)
+        t_meal = meal.get("t_meal", 0)
+        if carbs <= 0:
+            continue
         fiber_ratio = meal.get("fiber_ratio", 0.1)
         is_liquid = meal.get("is_liquid", False)
         fatprotein = meal.get("fatprotein", 0.1)
@@ -58,7 +63,7 @@ def calculate_endo_insulin(
         exp_term = torch.exp(-delta_t_tensor * k_abs_i)
         
         endo_insulin = (
-            torch.tensor(carbs, dtype=torch.float32)
+            torch.tensor(float(carbs), dtype=torch.float32)
             * k_abs_i
             * (1.0 - exp_term)
             * (1.0 - torch.sigmoid(params.delta_u) * torch.tensor(float(bN), dtype=torch.float32))
@@ -78,19 +83,27 @@ def calculate_exo_insulin(
     total_exo = torch.tensor(0.0, dtype=torch.float32)
     
     for med in insulin_medications:
-        units = med["units"]
-        delta_t = max(0.0, t - med["time"])
-        med_type = med.get("type", insulin_type)
-        
-        if med_type == "Rapid-Acting":
-            insulin_effect = get_rapid_acting(delta_t, units, params)
-        elif med_type == "Short-Acting (Regular)":
-            insulin_effect = get_short_acting(delta_t, units)
-        elif med_type == "Intermediate-Acting":
-            insulin_effect = get_intermediate(delta_t, units, params)
-        else:  
-            insulin_effect = get_long_acting(delta_t, units)
-        
+        try:
+            units = med.get("units", 0) 
+            med_time = med.get("time", 0)       
+            med_type = med.get("type", insulin_type)
+            if units <= 0:
+                continue
+            delta_t = max(0.0, t - med_time)
+            
+            if med_type and "rapid" in med_type.lower():
+                insulin_effect = get_rapid_acting(delta_t, units, params)
+            elif med_type and "short" in med_type.lower():
+                insulin_effect = get_short_acting(delta_t, units)
+            elif med_type and "intermediate" in med_type.lower():
+                insulin_effect = get_intermediate(delta_t, units, params)
+            elif med_type and ("basal" in med_type.lower() or "long" in med_type.lower()):
+                insulin_effect = get_long_acting(delta_t, units)
+            else:
+                insulin_effect = get_rapid_acting(delta_t, units, params)
+        except Exception as e:
+            print(f"    Error processing insulin medication: {e}")
+            continue
         total_exo = total_exo + insulin_effect
     
     return total_exo
@@ -145,27 +158,33 @@ def calculate_med_effect(
     t: float,  
 ) -> torch.Tensor:
     total_med = torch.tensor(0.0, dtype=torch.float32)
-    
+    if not meds:
+        return total_med
     for med in meds:
-        dose = med.get("dose", 0)
-        med_id = med.get("med_id")
-        med_class = med.get("med_class")
-        t_k = med.get("t_k", 0) 
-        
-        model = med_durationModel([med_id])
-        t_duration = model.t_duration(med_id, med_class)
-        
-        # Width of gaussian decay: duration / 3
-        w_k = t_duration / 3.0
-        
-        # Gaussian decay centered at t_k: exp(-((t - t_k) / w_k)^2)
-        delta_t = t - t_k
-        delta_t_tensor = torch.tensor(delta_t, dtype=torch.float32)
-        w_k_tensor = torch.tensor(w_k, dtype=torch.float32)
-        
-        effect_kernel = torch.exp(-((delta_t_tensor / w_k_tensor) ** 2))
-        
-        med_effect = torch.tensor(dose, dtype=torch.float32) * effect_kernel
-        total_med = total_med + med_effect
+        try:
+            dose = med.get("dose", 0)
+            med_id = med.get("med_id")
+            med_class = med.get("med_class")
+            t_k = med.get("t_k", 0) 
+            if med_id is None or dose <= 0:
+                continue
+            model = med_durationModel([med_id])
+            t_duration = model.t_duration(med_id, med_class)
+            
+            # Width of gaussian decay: duration / 3
+            w_k = t_duration / 3.0
+            
+            # Gaussian decay centered at t_k: exp(-((t - t_k) / w_k)^2)
+            delta_t = t - t_k
+            delta_t_tensor = torch.tensor(delta_t, dtype=torch.float32)
+            w_k_tensor = torch.tensor(w_k, dtype=torch.float32)
+            
+            effect_kernel = torch.exp(-((delta_t_tensor / w_k_tensor) ** 2))
+            
+            med_effect = torch.tensor(dose, dtype=torch.float32) * effect_kernel
+            total_med = total_med + med_effect
+        except Exception as e:
+            print(f"    Error processing medication: {e}")
+            continue
     
     return total_med

@@ -14,6 +14,7 @@ def simulate_glucose(
     params: UserParams,
     insulin: bool,
     insulin_type: str | None,
+    medication_period: str = "unknown",
 ) -> torch.Tensor:
     """
     Simulate glucose trajectory over time.
@@ -44,7 +45,8 @@ def simulate_glucose(
             insulin=insulin,
             insulin_type=insulin_type,
             bN=bN,
-            params=params
+            params=params,
+            medication_period=medication_period
         )
         
         G.append(G_next)

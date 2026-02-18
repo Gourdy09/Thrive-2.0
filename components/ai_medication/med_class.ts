@@ -10,6 +10,7 @@ export class MedDurationModel {
     const name = medName.toLowerCase();
 
     if (name.includes("metformin")) return "biguanide";
+
     if (name.includes("glipizide") || name.includes("glyburide"))
       return "sulfonylurea";
 
@@ -29,6 +30,9 @@ export class MedDurationModel {
       name.includes("dapagliflozin")
     )
       return "sglt2";
+
+    if (name.includes("pioglitazone") || name.includes("rosiglitazone"))
+      return "tzd";
 
     return "other";
   }

@@ -9,6 +9,8 @@ Med_class_prior_duation = {
     "glp1_daily": 24.0,
     "glp1_weekly": 144.0,
     "sglt2": 24.0,
+    "tzd" : 24.0
+
 }
 
 class med_durationModel(torch.nn.Module):

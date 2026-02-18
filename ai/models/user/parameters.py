@@ -28,6 +28,12 @@ class UserParams(nn.Module):
         self.rho = torch.tensor(0.2)  # Liquid acceleration factor
         self.sigma = torch.tensor(0.5) # Noise std dev
 
+        #loos func 
+        self.lambda_fingerstick = nn.Parameter(torch.tensor(1.0))
+        self.lambda_window = nn.Parameter(torch.tensor(0.5))
+       #self.lambda_phys = nn.Parameter(torch.tensor())
+        self.lambda_med = nn.Parameter(torch.tensor(0.5))
+
     @property
     def su(self):
         return 0.7 + (1.3 - 0.7) * torch.sigmoid(self.su_raw)

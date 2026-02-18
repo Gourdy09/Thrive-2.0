@@ -13,8 +13,8 @@ class GlucoseLoss(nn.Module):
     def __init__(self, 
         lambda_fingerstick: float = 1.0,
         lambda_window: float = 0.5,
-        lambda_phys: float = 0.1,
         lambda_med: float = 0.05,
+        lambda_phys: float = 0.1,
         window_tolerance: float = 10.0,
         hr_weight: float = 0.5,
         hrv_weight: float = 0.5):

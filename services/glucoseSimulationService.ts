@@ -34,6 +34,7 @@ interface MedicationRow {
   med_class?: string;
   dosage: string;
 }
+
 const fetchInsulinMedication = async (
   userId: string,
 ): Promise<InsulinMedication[]> => {
@@ -138,11 +139,13 @@ export const glucoseSimulationService = {
         return {
           carbs: entry.nutrition.carbs,
           t_meal: hours,
-          fiber_ratio: 0.1,
+          fiber_ratio: 0.1, //fix  to make it an act thign
           is_liquid: entry.is_liquid,
           fatprotein: fatprotein,
         };
       });
+      const insulinMedication = await fetchInsulinMedication(userId);
+      const otherMedication = await fetchMedication(userId);
       const EXPO_PUBLIC_GLUCOSE_API_URL =
         process.env.EXPO_PUBLIC_GLUCOSE_API_URL;
       const response = await fetch(
@@ -156,6 +159,8 @@ export const glucoseSimulationService = {
             G_b: settings.you.baselineGlucose,
             insulin: settings.you.insulin,
             insulinType: settings.you.insulinType,
+            insulinMedication,
+            otherMedication,
           }),
         },
       );

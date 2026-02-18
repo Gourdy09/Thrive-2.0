@@ -1,10 +1,10 @@
 import torch 
 import torch.nn as nn 
-from torch.optim import Adam, SGD
-from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
+from torch.optim import Adam
+from torch.optim.lr_scheduler import CosineAnnealingLR
 import json 
 from pathlib import Path  
-from typing import Dict, List, Tuple, Optional 
+from typing import Dict, Tuple, Optional 
 from datetime import datetime
 import numpy as np 
 import shutil
@@ -61,10 +61,10 @@ class GlucoseTrainer:
         params = UserParams()
         params = params.to(self.device)
         loss_fn = GlucoseLoss(
-            lambda_fingerstick=1.0,
-            lambda_window=0.5,
+            params.lambda_fingerstick.item(),
+            params.lambda_window.item(),
+            params.lambda_med.item(),
             lambda_phys=0.0,
-            lambda_med=0.0,
             window_tolerance=10.0
         )
 
@@ -185,7 +185,7 @@ class GlucoseTrainer:
             glucose_seq = train_data['glucose_sequences'][i]
 
             # Forward pass 
-            predicted = self._simulate_glucose_from_meal(params, meal, glucose_seq)
+            predicted = self._simulate_glucose(params, meal, glucose_seq)
             observed = torch.tensor(glucose_seq['glucose_values'], dtype=torch.float32)
             baseline = torch.tensor([glucose_seq['baseline_glucose']], dtype=torch.float32)
 
@@ -222,7 +222,7 @@ class GlucoseTrainer:
                 glucose_seq = val_data['glucose_sequences'][i]
 
                 # Forward pass 
-                predicted = self._simulate_glucose_from_meal(params, meal, glucose_seq)
+                predicted = self._simulate_glucose(params, meal, glucose_seq)
                 observed = torch.tensor(glucose_seq['glucose_values'], dtype=torch.float32)
                 baseline = torch.tensor([glucose_seq['baseline_glucose']], dtype=torch.float32)
 
@@ -237,7 +237,7 @@ class GlucoseTrainer:
         
         return avg_loss, {}
 
-    def _simulate_glucose_from_meal(  
+    def _simulate_glucose(  
         self,
         params: UserParams,
         meal: Dict, 
@@ -251,7 +251,7 @@ class GlucoseTrainer:
             'fatprotein': meal['fatprotein'],
             'alpha': 0.3
         }]
-        
+        med_period = meal['medication_period']
         times = glucose_seq['glucose_times']
         if not isinstance(times, torch.Tensor):
             times = torch.tensor(times)
@@ -266,7 +266,8 @@ class GlucoseTrainer:
                 other_medications=[],
                 params=params,
                 insulin=False, 
-                insulin_type=None 
+                insulin_type=None,
+                medication_period=med_period
             )
             
             if isinstance(predicted, torch.Tensor):
@@ -275,14 +276,16 @@ class GlucoseTrainer:
                 return torch.tensor(predicted, dtype=torch.float32)
         except Exception as e:
             import traceback
-            print(f"\n❌ SIMULATE_GLUCOSE ERROR:")
+            print(f"\n SIMULATE_GLUCOSE ERROR:")
             print(f"Error: {e}")
             print(f"Traceback:")
             traceback.print_exc()
             print(f"Meal: {meal}")
             print(f"Times: {times}")
+            print(f"Medication Period: {med_period}")
             print()
         return torch.zeros(len(times), dtype=torch.float32)
+        
     def _save_checkpoint( 
         self, 
         params: UserParams,

@@ -27,4 +27,4 @@ for t in range(len(G_obs)):
     predictions.append(G_tilde)
 
 predictions = torch.stack(predictions)
-loss = torch.mean((predictions.squeeze() + params.Gb - G_obs)**2) # temp only to make sure step_glucose works and then later add actual loss func
+loss = torch.mean((predictions.squeeze() + params.Gb - G_obs)**2)

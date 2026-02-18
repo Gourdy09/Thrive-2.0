@@ -1,10 +1,10 @@
 {
   "model_name": "glucose_advanced",
-  "num_epochs": 27,
-  "best_val_loss": 410.1516930075253,
-  "test_loss": 362.5262368854724,
-  "final_train_loss": 427.1318819896284,
+  "num_epochs": 31,
+  "best_val_loss": 358.90684193914586,
+  "test_loss": 355.22419923610903,
+  "final_train_loss": 452.71801535879695,
   "learning_rate": 0.005,
   "early_stopping": true,
-  "timestamp": "2026-02-16T17:58:31.583733"
+  "timestamp": "2026-02-18T14:37:06.632926"
 }

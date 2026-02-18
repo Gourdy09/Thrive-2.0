@@ -1,20 +1,26 @@
 {
-  "total_sequences": 119,
-  "total_meals": 120,
-  "date_range": {
-    "start": "2025-06-12T13:15:00",
-    "end": "2026-01-23T03:45:00"
-  },
-  "carb_statistics": {
-    "min": 3.0,
-    "max": 165.0,
-    "mean": 58.65,
-    "median": 55.5
-  },
-  "glucose_statistics": {
+  "num_sequences": 587,
+  "num_glucose_readings": 7559,
+  "train_split": 410,
+  "val_split": 88,
+  "test_split": 89,
+  "glucose_stats": {
     "min": 68.0,
     "max": 194.0,
-    "mean": 110.71546405143859,
-    "median": 110.0
+    "mean": 115.96150284429157,
+    "std": 17.219261011209248
+  },
+  "carb_stats": {
+    "min": 1.0,
+    "max": 185.0,
+    "mean": 63.385860306643956,
+    "std": 34.94898576298367
+  },
+  "medication_distribution": {
+    "metformin_500_er": 241,
+    "metformin_500": 101,
+    "pioglitazone_45": 200,
+    "baseline": 42,
+    "unknown": 3
   }
 }
