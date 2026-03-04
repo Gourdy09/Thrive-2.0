@@ -2,7 +2,7 @@ import torch
 from ai.models.glucose.dynamics import step_glucose
 from ai.models.user.parameters import UserParams
 
-# 1 sequence 
+
 G_obs = torch.tensor([...]) # your glucose reading 
 carb_effect = torch.tensor([...])
 circadian_offset = torch.tensor([...])

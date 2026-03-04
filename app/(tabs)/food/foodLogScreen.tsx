@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFoodLogCleanup } from "@/hooks/useFoodLogCleanup";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { deleteFoodLogEntry, FoodLogRow, getFoodLogForDay } from "@/lib/db";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import {
@@ -27,78 +27,40 @@ import {
   View,
 } from "react-native";
 
-interface FoodLogEntry {
-  id: string;
-  recipeId?: string;
-  recipeName: string;
-  timestamp: Date;
-  mealType: "breakfast" | "lunch" | "dinner" | "snack";
-  nutrition: {
-    protein: number;
-    carbs: number;
-    calories?: number;
-    fiber: number;
-  };
-  imageUrl?: string;
-  is_liquid: boolean;
-}
-
 export default function FoodLogScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
-  const [foodLog, setFoodLog] = useState<FoodLogEntry[]>([]);
   const [selectedDate] = useState(new Date());
-
+  const [foodLog, setFoodLog] = useState<FoodLogRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const username = user?.email?.split("@")[0] || "User";
 
-  // Use the cleanup hook
   useFoodLogCleanup();
 
-  const loadFoodLog = async () => {
+  const loadTodayFoodLog = async () => {
+    setLoading(true);
     try {
-      const stored = await AsyncStorage.getItem("foodLog");
-      if (stored) {
-        const parsed = JSON.parse(stored).map((entry: any) => ({
-          ...entry,
-          timestamp: new Date(entry.timestamp),
-        }));
-
-        // Filter for today's entries only
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayEntries = parsed.filter((entry: FoodLogEntry) => {
-          const entryDate = new Date(entry.timestamp);
-          entryDate.setHours(0, 0, 0, 0);
-          return entryDate.getTime() === today.getTime();
-        });
-
-        setFoodLog(todayEntries);
-      }
+      const todayStr = new Date().toISOString().split("T")[0]; // "2026-03-02"
+      const rows = await getFoodLogForDay(todayStr);
+      setFoodLog(rows);
     } catch (error) {
-      console.error("Error loading food log:", error);
+      console.error("Failed to load today's food log:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadFoodLog();
+    loadTodayFoodLog();
   }, [selectedDate]);
 
-  // Reload when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      loadFoodLog();
+      loadTodayFoodLog();
     }, []),
   );
-
-  const saveFoodLog = async (log: FoodLogEntry[]) => {
-    try {
-      await AsyncStorage.setItem("foodLog", JSON.stringify(log));
-    } catch (error) {
-      console.error("Error saving food log:", error);
-    }
-  };
 
   const deleteEntry = (id: string) => {
     Alert.alert(
@@ -110,9 +72,8 @@ export default function FoodLogScreen() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            const newLog = foodLog.filter((entry) => entry.id !== id);
-            setFoodLog(newLog);
-            await saveFoodLog(newLog);
+            await deleteFoodLogEntry(id);
+            await loadTodayFoodLog();
           },
         },
       ],
@@ -149,30 +110,31 @@ export default function FoodLogScreen() {
     }
   };
 
+  // ✅ Group using snake_case field from FoodLogRow
   const groupByMealType = () => {
-    const grouped: { [key: string]: FoodLogEntry[] } = {
+    const grouped: Record<string, FoodLogRow[]> = {
       breakfast: [],
       lunch: [],
       dinner: [],
       snack: [],
     };
-
     foodLog.forEach((entry) => {
-      grouped[entry.mealType].push(entry);
+      grouped[entry.meal_type].push(entry);
     });
-
     return grouped;
   };
 
+  // ✅ Use flat fields from FoodLogRow (no .nutrition nesting)
   const getTotalNutrition = () => {
     return foodLog.reduce(
       (acc, entry) => ({
-        protein: acc.protein + (entry.nutrition.protein || 0),
-        carbs: acc.carbs + (entry.nutrition.carbs || 0),
-        calories: acc.calories + (entry.nutrition.calories || 0),
-        fiber: acc.fiber + (entry.nutrition.fiber || 0),
+        protein: acc.protein + (entry.protein || 0),
+        carbs: acc.carbs + (entry.carbs || 0),
+        fat: acc.fat + (entry.fat || 0),
+        fiber: acc.fiber + (entry.fiber || 0),
+        calories: acc.calories + (entry.calories || 0),
       }),
-      { protein: 0, carbs: 0, calories: 0, fiber: 0 },
+      { protein: 0, carbs: 0, fat: 0, fiber: 0, calories: 0 },
     );
   };
 
@@ -199,22 +161,12 @@ export default function FoodLogScreen() {
       >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={{
-            padding: 8,
-            marginLeft: -8,
-            marginRight: 8,
-          }}
+          style={{ padding: 8, marginLeft: -8, marginRight: 8 }}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <ArrowLeft size={24} color={theme.tint} strokeWidth={2.5} />
         </TouchableOpacity>
-        <Text
-          style={{
-            fontSize: 28,
-            fontWeight: "700",
-            color: theme.text,
-          }}
-        >
+        <Text style={{ fontSize: 28, fontWeight: "700", color: theme.text }}>
           Food Log
         </Text>
       </View>
@@ -251,46 +203,27 @@ export default function FoodLogScreen() {
         </View>
 
         <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
-          <View style={{ alignItems: "center" }}>
-            <Text style={{ color: theme.icon, fontSize: 12, marginBottom: 4 }}>
-              Protein
-            </Text>
-            <Text
-              style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}
-            >
-              {Math.round(totalNutrition.protein)}g
-            </Text>
-          </View>
-          <View style={{ alignItems: "center" }}>
-            <Text style={{ color: theme.icon, fontSize: 12, marginBottom: 4 }}>
-              Carbs
-            </Text>
-            <Text
-              style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}
-            >
-              {Math.round(totalNutrition.carbs)}g
-            </Text>
-          </View>
-          <View style={{ alignItems: "center" }}>
-            <Text style={{ color: theme.icon, fontSize: 12, marginBottom: 4 }}>
-              Calories
-            </Text>
-            <Text
-              style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}
-            >
-              {Math.round(totalNutrition.calories || 0)}
-            </Text>
-          </View>
-          <View style={{ alignItems: "center" }}>
-            <Text style={{ color: theme.icon, fontSize: 12, marginBottom: 4 }}>
-              Fiber
-            </Text>
-            <Text
-              style={{ color: theme.text, fontSize: 24, fontWeight: "700" }}
-            >
-              {Math.round(totalNutrition.fiber || 0)}
-            </Text>
-          </View>
+          {[
+            { label: "Protein", value: totalNutrition.protein, suffix: "g" },
+            { label: "Carbs", value: totalNutrition.carbs, suffix: "g" },
+            { label: "Fat", value: totalNutrition.fat, suffix: "g" },
+            { label: "Fiber", value: totalNutrition.fiber, suffix: "g" },
+            { label: "Calories", value: totalNutrition.calories, suffix: "" },
+          ].map(({ label, value, suffix }) => (
+            <View key={label} style={{ alignItems: "center" }}>
+              <Text
+                style={{ color: theme.icon, fontSize: 12, marginBottom: 4 }}
+              >
+                {label}
+              </Text>
+              <Text
+                style={{ color: theme.text, fontSize: 22, fontWeight: "700" }}
+              >
+                {Math.round(value)}
+                {suffix}
+              </Text>
+            </View>
+          ))}
         </View>
       </View>
 
@@ -349,6 +282,7 @@ export default function FoodLogScreen() {
                     >
                       {/* Text Content */}
                       <View style={{ flex: 1 }}>
+                        {/* ✅ snake_case fields directly from FoodLogRow */}
                         <Text
                           style={{
                             fontSize: 16,
@@ -358,7 +292,7 @@ export default function FoodLogScreen() {
                             flexWrap: "wrap",
                           }}
                         >
-                          {entry.recipeName}
+                          {entry.recipe_name}
                         </Text>
                         <View
                           style={{
@@ -375,7 +309,7 @@ export default function FoodLogScreen() {
                               marginLeft: 4,
                             }}
                           >
-                            {entry.timestamp.toLocaleTimeString([], {
+                            {new Date(entry.timestamp).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
                             })}
@@ -389,26 +323,25 @@ export default function FoodLogScreen() {
                           }}
                         >
                           <Text style={{ fontSize: 12, color: theme.icon }}>
-                            Protein: {Math.round(entry.nutrition.protein)}g
+                            Protein: {Math.round(entry.protein)}g
                           </Text>
                           <Text style={{ fontSize: 12, color: theme.icon }}>
-                            Carbs: {Math.round(entry.nutrition.carbs)}g
+                            Carbs: {Math.round(entry.carbs)}g
                           </Text>
                           <Text style={{ fontSize: 12, color: theme.icon }}>
-                            Fiber: {Math.round(entry.nutrition.fiber)}g
+                            Fat: {Math.round(entry.fat)}g
+                          </Text>
+                          <Text style={{ fontSize: 12, color: theme.icon }}>
+                            Fiber: {Math.round(entry.fiber)}g
                           </Text>
                         </View>
                       </View>
 
                       {/* Image */}
-                      {entry.imageUrl && (
+                      {entry.image_url && (
                         <Image
-                          source={{ uri: entry.imageUrl }}
-                          style={{
-                            width: 60,
-                            height: 60,
-                            borderRadius: 8,
-                          }}
+                          source={{ uri: entry.image_url }}
+                          style={{ width: 60, height: 60, borderRadius: 8 }}
                           resizeMode="cover"
                         />
                       )}
@@ -416,9 +349,7 @@ export default function FoodLogScreen() {
                       {/* Delete Button */}
                       <TouchableOpacity
                         onPress={() => deleteEntry(entry.id)}
-                        style={{
-                          padding: 8,
-                        }}
+                        style={{ padding: 8 }}
                       >
                         <Trash2 size={18} color="#FF6B6B" />
                       </TouchableOpacity>
@@ -443,11 +374,7 @@ export default function FoodLogScreen() {
           >
             <Pizza size={48} color={theme.icon} style={{ marginBottom: 16 }} />
             <Text
-              style={{
-                fontSize: 16,
-                color: theme.icon,
-                textAlign: "center",
-              }}
+              style={{ fontSize: 16, color: theme.icon, textAlign: "center" }}
             >
               No food logged yet today.{"\n"}Start tracking your meals!
             </Text>

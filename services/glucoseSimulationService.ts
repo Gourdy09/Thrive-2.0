@@ -1,153 +1,89 @@
-import { MedDurationModel } from "@/components/ai_medication/med_class";
-import { supabase } from "@/lib/supabase";
+//import { MedDurationModel } from "@/components/ai_medication/med_class";
 import { AppSettings } from "@/types/settings";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-interface foodLogEntry {
+import * as SQLite from "expo-sqlite";
+interface FoodLogRow {
   id: string;
-  recipeName: string;
   timestamp: string;
-  mealType: "breakfast" | "lunch" | "dinner" | "snack";
-  nutrition: {
-    protein: number;
-    carbs: number;
-    calories?: number;
-    fiber: number;
-    fat: number;
-  };
-  imageUrl?: string;
-  is_liquid: boolean;
+  carbs: number;
+  fat: number;
+  protein: number;
+  fiber: number;
+  is_liquid: number;
 }
-interface InsulinMedication {
-  units: number;
-  time: number;
-  type: string;
+interface SensorPacketRow {
+  hr: number;
+  hrv: number;
+  vm: number;
+  sleep_score: number;
+  unix: number;
+  interpolated: number;
 }
-interface medication {
-  med_id: string;
-  dose: number;
-  t_k: number;
-  med_class: string | undefined;
-}
-interface MedicationRow {
-  id: string;
-  medication_name: string;
-  med_class?: string;
-  dosage: string;
+interface SimulationResult {
+  glucoseTrajectory: number[];
+  peakGlucose: number;
+  averageGlucose: number;
+  timePoints: number[];
 }
 
-const fetchInsulinMedication = async (
-  userId: string,
-): Promise<InsulinMedication[]> => {
-  try {
-    const { data: meds, error: medError } = await supabase
-      .from("medication")
-      .select("id, medication_name, dosage")
-      .eq("user_id", userId)
-      .eq("isActive", true)
-      .ilike("medication_name", "%insulin%");
+async function fetchMealFromSQLite() {
+  const db = await SQLite.openDatabaseAsync("glucose_app.db");
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const rows = await db.getAllAsync<FoodLogRow>(
+    `SELECT id, timestamp, carbs, fat, protein, fiber, is_liquid
+    FROM food_log
+    WHERE carbs > 0 AND timestamp >= ?
+    ORDER BY timestamp ASC`,
+    [since],
+  );
+  return rows.map((row) => {
+    const entryTime = new Date(row.timestamp);
+    const hours = entryTime.getHours() + entryTime.getMinutes() / 60;
+    const totalMacro = row.carbs + row.fat + row.protein;
+    const fatprotein =
+      totalMacro > 0 ? (row.fat + row.protein) / totalMacro : 0.2;
+    const fiber_ratio = row.carbs > 0 ? row.fiber / row.carbs : 0.1;
 
-    if (medError) throw medError;
+    return {
+      carbs: row.carbs,
+      t_meal: hours,
+      fiber_ratio,
+      is_liquid: Boolean(row.is_liquid),
+      fatprotein,
+    };
+  });
+}
+async function fetchSensorPacketsFromSQLite() {
+  const db = await SQLite.openDatabaseAsync("glucose_app.db");
+  const since = Math.floor(Date.now() / 1000) - 24 * 60 * 60;
 
-    const insulinMeds: InsulinMedication[] = [];
-
-    for (const med of meds || []) {
-      const dosageMatch = med.dosage?.match(/(\d+)/);
-      const units = dosageMatch ? parseFloat(dosageMatch[1]) : 0;
-
-      const { data: alerts, error: alertsError } = await supabase
-        .from("medicine_alerts")
-        .select("time")
-        .eq("medication_id", med.id)
-        .eq("enabled", true);
-
-      if (alertsError) throw alertsError;
-
-      for (const alert of alerts || []) {
-        const [hour, minutes] = alert.time.split(":").map(Number);
-        insulinMeds.push({
-          units,
-          time: hour + minutes / 60,
-          type: med.medication_name,
-        });
-      }
-    }
-    return insulinMeds;
-  } catch (error) {
-    console.error("Error fetching insulin medications:", error);
-    return [];
-  }
-};
-const fetchMedication = async (userId: string): Promise<medication[]> => {
-  try {
-    const { data: medsData, error: medError } = await supabase
-      .from("medication")
-      .select("id, medication_name, dosage, med_class")
-      .eq("user_id", userId)
-      .eq("isActive", true);
-
-    if (medError) throw medError;
-    if (!medsData) return [];
-
-    const meds: MedicationRow[] = medsData;
-    const medsWithClass = MedDurationModel.assignMedClassToRows(meds);
-    const Meds: medication[] = [];
-
-    for (const med of medsWithClass || []) {
-      const dosageMatch = med.dosage?.match(/(\d+)/);
-      if (!dosageMatch) continue;
-      const dose = Number(dosageMatch[1]);
-
-      const { data: alerts, error: alertsError } = await supabase
-        .from("medicine_alerts")
-        .select("time")
-        .eq("medication_id", med.id)
-        .eq("enabled", true);
-
-      if (alertsError) throw alertsError;
-
-      for (const alert of alerts || []) {
-        const [hour, minutes] = alert.time.split(":").map(Number);
-        Meds.push({
-          med_id: String(med.id),
-          t_k: hour + minutes / 60,
-          dose: dose,
-          med_class: med.med_class,
-        });
-      }
-    }
-    return Meds;
-  } catch (error) {
-    console.error("Error fetching medications:", error);
-    return [];
-  }
-};
+  const rows = await db.getAllAsync<SensorPacketRow>(
+    `SELECT hr, hrv, vm, sleep_score, unix, interpolated
+    FROM sensor_packets
+    WHERE unix >= ?
+    ORDER BY unix ASC`,
+    [since],
+  );
+  return rows.map((row) => ({
+    hr: row.hr,
+    hrv: row.hrv,
+    vm: row.vm,
+    sleep_score: row.sleep_score,
+    unix: row.unix,
+    interpolated: Boolean(row.interpolated),
+  }));
+}
 export const glucoseSimulationService = {
-  async runSimulation(settings: AppSettings, userId: string) {
+  async runSimulation(
+    settings: AppSettings,
+    userId: string,
+  ): Promise<SimulationResult> {
     try {
-      const stored = await AsyncStorage.getItem("foodLog");
-      const foodLog: foodLogEntry[] = stored ? JSON.parse(stored) : [];
+      const meals = await fetchMealFromSQLite();
+      const activity = await fetchSensorPacketsFromSQLite();
 
-      //format
-      const meals = foodLog.map((entry) => {
-        const entryTime = new Date(entry.timestamp);
-        const hours = entryTime.getHours() + entryTime.getMinutes() / 60;
-        const fatprotein =
-          (entry.nutrition.fat + entry.nutrition.protein) /
-          (entry.nutrition.fat +
-            entry.nutrition.protein +
-            entry.nutrition.carbs);
-        return {
-          carbs: entry.nutrition.carbs,
-          t_meal: hours,
-          fiber_ratio: 0.1, //fix  to make it an act thign
-          is_liquid: entry.is_liquid,
-          fatprotein: fatprotein,
-        };
-      });
-      const insulinMedication = await fetchInsulinMedication(userId);
-      const otherMedication = await fetchMedication(userId);
       const EXPO_PUBLIC_GLUCOSE_API_URL =
         process.env.EXPO_PUBLIC_GLUCOSE_API_URL;
+
       const response = await fetch(
         EXPO_PUBLIC_GLUCOSE_API_URL + "/simulate-glucose",
         {
@@ -156,11 +92,10 @@ export const glucoseSimulationService = {
           body: JSON.stringify({
             userId,
             meals,
+            activity,
             G_b: settings.you.baselineGlucose,
             insulin: settings.you.insulin,
             insulinType: settings.you.insulinType,
-            insulinMedication,
-            otherMedication,
           }),
         },
       );

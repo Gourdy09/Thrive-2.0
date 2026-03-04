@@ -33,20 +33,20 @@ def simulate_glucose(
         current_time = time[i].item() if isinstance(time[i], torch.Tensor) else time[i]
         
         bN = 1 if (22 <= current_time or current_time < 6) else 0
-        
+        current_sensor = activity[i] if i < len(activity) else None
         # Step glucose forward 
         G_next = step_glucose(
             G_tilde=G[i].item() if isinstance(G[i], torch.Tensor) else G[i],
             t=current_time,
             meals=meals,
-            activity=activity,
+            activity=[current_sensor] if current_sensor else [],
             insulin_medications=insulin_medications,
             other_medications=other_medications,
             insulin=insulin,
             insulin_type=insulin_type,
             bN=bN,
             params=params,
-            medication_period=medication_period
+            medication_period=medication_period,
         )
         
         G.append(G_next)

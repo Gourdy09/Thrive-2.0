@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRecipeScraper } from "@/hooks/useRecipeScraper";
+import { getFoodLogForDay } from "@/lib/db";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
@@ -14,7 +15,7 @@ import {
   RefreshCw,
   Sparkles,
   TrendingUp,
-  Zap
+  Zap,
 } from "lucide-react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -31,8 +32,6 @@ import {
   View,
 } from "react-native";
 import Popup from "./extendedRecipeInfoModal";
-
-
 
 interface RecipeData {
   id: string;
@@ -139,13 +138,13 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
   const [foodLogCount, setFoodLogCount] = useState(0);
   const [showSavedRecipes, setShowSavedRecipes] = useState(false);
   const [customRecipes, setCustomRecipes] = useState<RecipeData[]>([]);
-  
+
   // Infinite scroll state
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const lastScrollX = useRef(0);
   const loadMoreTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
   const [filters, setFilters] = useState<RecipeFilters>({
     cuisines: [],
     maxCookTime: undefined,
@@ -156,12 +155,19 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
   const { user } = useAuth();
   const username1 = user?.email?.split("@")[0] || "User";
 
-  const { recipes, loading, error, refreshRecipes, userPreferences, cycleRecipes } = useRecipeScraper();
+  const {
+    recipes,
+    loading,
+    error,
+    refreshRecipes,
+    userPreferences,
+    cycleRecipes,
+  } = useRecipeScraper();
 
   useFocusEffect(
     React.useCallback(() => {
       loadCustomRecipes();
-    }, [])
+    }, []),
   );
 
   useEffect(() => {
@@ -188,16 +194,9 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
 
   const loadFoodLogCount = async () => {
     try {
-      const stored = await AsyncStorage.getItem("foodLog");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        const today = new Date().toDateString();
-        const todayCount = parsed.filter((entry: any) => {
-          const entryDate = new Date(entry.timestamp).toDateString();
-          return entryDate === today;
-        }).length;
-        setFoodLogCount(todayCount);
-      }
+      const todayStr = new Date().toISOString().split("T")[0];
+      const rows = await getFoodLogForDay(todayStr);
+      setFoodLogCount(rows.length);
     } catch (error) {
       console.error("Error loading food log count:", error);
     }
@@ -219,7 +218,7 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
     try {
       await AsyncStorage.setItem(
         "bookmarkedRecipes",
-        JSON.stringify(bookmarks)
+        JSON.stringify(bookmarks),
       );
     } catch (error) {
       console.error("Error saving bookmarks:", error);
@@ -290,7 +289,8 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
   // Track scroll position and trigger load more
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+      const { contentOffset, layoutMeasurement, contentSize } =
+        event.nativeEvent;
       const currentScrollX = contentOffset.x;
       const scrollWidth = contentSize.width;
       const viewWidth = layoutMeasurement.width;
@@ -301,23 +301,23 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
 
       // Calculate distance from end
       const distanceFromEnd = scrollWidth - (currentScrollX + viewWidth);
-      
+
       // Only load more if:
       // 1. Scrolling forward
       // 2. Within 300px of end
       // 3. Not already loading
       const LOAD_MORE_THRESHOLD = 300;
-      
+
       if (
-        isScrollingForward && 
-        distanceFromEnd < LOAD_MORE_THRESHOLD && 
-        !isLoadingMore && 
+        isScrollingForward &&
+        distanceFromEnd < LOAD_MORE_THRESHOLD &&
+        !isLoadingMore &&
         !loading
       ) {
         loadMoreRecipes();
       }
     },
-    [loadMoreRecipes, isLoadingMore, loading]
+    [loadMoreRecipes, isLoadingMore, loading],
   );
 
   // Handle scroll end to ensure we don't get stuck
@@ -333,7 +333,7 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
   const allRecipes = [...customRecipes, ...recipes];
 
   const savedRecipes = allRecipes.filter((recipe) =>
-    bookmarkedRecipes.includes(recipe.id)
+    bookmarkedRecipes.includes(recipe.id),
   );
 
   return (
@@ -360,9 +360,7 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
               <Camera size={28} color={theme.tint} />
             </View>
             <View style={styles.scannerText}>
-              <Text
-                style={[styles.scannerTitle, { color: theme.background }]}
-              >
+              <Text style={[styles.scannerTitle, { color: theme.background }]}>
                 AI Food Scanner
               </Text>
               <Text
@@ -411,7 +409,9 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
               marginBottom: 24,
             }}
           >
-            <Text style={{ color: theme.text, fontSize: 13, fontWeight: "600" }}>
+            <Text
+              style={{ color: theme.text, fontSize: 13, fontWeight: "600" }}
+            >
               Filtering for: {userPreferences.dietaryRestrictions.join(", ")}
             </Text>
           </View>
@@ -485,14 +485,11 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
               </Text>
               <Zap size={20} color={theme.tint} />
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => refreshRecipes("healthy recipes", filters)}
               disabled={loading}
             >
-              <RefreshCw 
-                size={20} 
-                color={loading ? theme.icon : theme.tint}
-              />
+              <RefreshCw size={20} color={loading ? theme.icon : theme.tint} />
             </TouchableOpacity>
           </View>
 
@@ -500,7 +497,13 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
             <RecipeSkeletonGrid />
           ) : error && !error.includes("quota") ? (
             <View style={styles.loadingContainer}>
-              <Text style={{ color: theme.text, textAlign: 'center', marginBottom: 8 }}>
+              <Text
+                style={{
+                  color: theme.text,
+                  textAlign: "center",
+                  marginBottom: 8,
+                }}
+              >
                 Error: {error}
               </Text>
               <TouchableOpacity
@@ -537,12 +540,14 @@ export default function FoodScreen({ username = "UserName" }: FoodScreenProps) {
                     onToggleBookmark={toggleBookmark}
                   />
                 ))}
-                
+
                 {/* Loading indicator at the end */}
                 {isLoadingMore && (
                   <View style={styles.loadingMoreContainer}>
                     <ActivityIndicator size="large" color={theme.tint} />
-                    <Text style={[styles.loadingMoreText, { color: theme.icon }]}>
+                    <Text
+                      style={[styles.loadingMoreText, { color: theme.icon }]}
+                    >
                       Loading more...
                     </Text>
                   </View>

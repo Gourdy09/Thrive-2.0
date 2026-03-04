@@ -1,5 +1,6 @@
 import MealTypeModal from "@/components/food/MealTypeModal";
 import { Colors } from "@/constants/Colors";
+import { FoodLogRow, insertFoodLog } from "@/lib/db";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import {
@@ -143,6 +144,8 @@ const Popup: React.FC<PopUpProps> = ({
     isLiquid: boolean,
   ) => {
     try {
+      if (!selectedRecipe) return;
+
       const logEntry = {
         id: Date.now().toString(),
         recipeId: selectedRecipe.id,
@@ -160,19 +163,35 @@ const Popup: React.FC<PopUpProps> = ({
         is_liquid: isLiquid,
       };
 
+      const row: FoodLogRow = {
+        id: logEntry.id,
+        recipe_id: logEntry.recipeId,
+        recipe_name: logEntry.recipeName,
+        timestamp: logEntry.timestamp,
+        meal_type: logEntry.mealType,
+        protein: logEntry.nutrition.protein,
+        carbs: logEntry.nutrition.carbs,
+        fat: logEntry.nutrition.fat,
+        fiber: logEntry.nutrition.fiber,
+        calories: logEntry.nutrition.calories,
+        is_liquid: logEntry.is_liquid,
+        image_url: logEntry.imageUrl,
+      };
+      await insertFoodLog(row);
+
       // Load and update daily food log
-      const stored = await AsyncStorage.getItem("foodLog");
-      const currentLog = stored ? JSON.parse(stored) : [];
-      const updatedLog = [logEntry, ...currentLog];
-      await AsyncStorage.setItem("foodLog", JSON.stringify(updatedLog));
 
       const weeklyStored = await AsyncStorage.getItem("weeklyInsightsData");
       const weeklyData = weeklyStored ? JSON.parse(weeklyStored) : [];
-      const updatedWeeklyData = [logEntry, ...weeklyData];
-      await AsyncStorage.setItem(
-        "weeklyInsightsData",
-        JSON.stringify(updatedWeeklyData),
-      );
+      const existingIds = new Set(weeklyData.map((entry: any) => entry.id));
+      if (!existingIds.has(logEntry.id)) {
+        const updatedWeekly = [...weeklyData, logEntry];
+        await AsyncStorage.setItem(
+          "weeklyInsightsData",
+          JSON.stringify(updatedWeekly),
+        );
+      }
+
       setShowMealModal(false);
     } catch (error) {
       console.error("Error adding to food log:", error);

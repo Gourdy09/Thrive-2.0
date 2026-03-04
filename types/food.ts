@@ -35,7 +35,9 @@ export interface FoodLogEntry {
     carbs: number;
     calories?: number;
     fiber?: number;
+    fat: number;
   };
+  is_liquid: boolean;
   imageUrl?: string;
 }
 

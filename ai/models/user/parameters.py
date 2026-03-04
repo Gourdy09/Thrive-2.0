@@ -31,8 +31,10 @@ class UserParams(nn.Module):
         #loos func 
         self.lambda_fingerstick = nn.Parameter(torch.tensor(1.0))
         self.lambda_window = nn.Parameter(torch.tensor(0.5))
-       #self.lambda_phys = nn.Parameter(torch.tensor())
+        self.lambda_phys = nn.Parameter(torch.tensor(0.01))
         self.lambda_med = nn.Parameter(torch.tensor(0.5))
+
+        self.alpha_activity_raw = nn.Parameter(torch.ones(6) * 0.1)
 
     @property
     def su(self):
@@ -49,3 +51,6 @@ class UserParams(nn.Module):
     @property
     def alpha(self):
         return 0.5 * torch.sigmoid(self.alpha_raw)
+    @property
+    def alpha_activity(self):
+        return torch.sigmoid(self.alpha_activity_raw)

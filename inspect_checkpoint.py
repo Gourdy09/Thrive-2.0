@@ -19,7 +19,7 @@ if checkpoint_path.exists():
                 print(f"  Model parameters:")
                 for param_name, param_value in value.items():
                     print(f"    - {param_name}: {param_value.shape if hasattr(param_value, 'shape') else type(param_value)}")
-                   # print(f"    - {param_name}: {param_value.item() if param_value.dim() == 0 else param_value}") to get the param values
+                    print(f"    - {param_name}: {param_value.item() if param_value.dim() == 0 else param_value}") 
             else:
                 for k, v in list(value.items())[:5]:  # Show first 5
                     print(f"  {k}: {v}")

@@ -7,9 +7,10 @@ import torch
 import torch.nn as nn
 from typing import Dict, List, Tuple, Optional, Any
 import numpy as np
-
+from ai.models.user.parameters import UserParams
 
 class GlucoseLoss(nn.Module):
+    params = UserParams()
     def __init__(self, 
         lambda_fingerstick: float = 1.0,
         lambda_window: float = 0.5,
@@ -39,6 +40,11 @@ class GlucoseLoss(nn.Module):
         hrv_observed: Optional[torch.Tensor] = None,
         med_duration_model: Optional[Any] = None
     ) -> Tuple[torch.Tensor, Dict[str, float]]:
+        if G_b is None:
+            if params is not None:
+                G_b = params.Gb.detach()  # tensor value from UserParams
+            else:
+                raise ValueError("G_b not provided and params is None")
         if not isinstance(pred_glucose, torch.Tensor):
             pred_glucose = torch.tensor(pred_glucose, dtype=torch.float32)
         if not isinstance(obs_glucose, torch.Tensor):

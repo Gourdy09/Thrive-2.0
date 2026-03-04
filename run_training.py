@@ -1,7 +1,6 @@
 from ai.training.train import train_simple, GlucoseTrainer
 
 def quick_test():
-    #fast test 
     print("Runninf quick test....")
     results = train_simple(num_epochs=10)
     return results 
