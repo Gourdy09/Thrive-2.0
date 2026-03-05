@@ -6,7 +6,8 @@ import json
 import os 
 import traceback
 from ai.models.user.parameters import UserParams
-from ai.simulation.simulate_glucose import simulate_glucose
+from ai.prediction.forecast import forecast, select_window
+from ai.prediction.confidence import build_forecast_response
 
 app = Flask(__name__)
 
@@ -23,7 +24,6 @@ def _load_user_params(user_id: str) -> UserParams:
         resp =(
             sb.table("user_model_params")
             .select("*")
-            .eq("user_id", user_id)
             .eq("user_id", user_id)
             .limit(1)
             .execute()
@@ -56,59 +56,28 @@ def _load_user_params(user_id: str) -> UserParams:
 def simulate_glucose_endpoint():
     try:
         data = request.get_json()
-
-        user_id = data.get('userID')
-        meals = data.get('meals',[])
-        G_b = float(data.get('G_b',100.0))
-        insulin = bool(data.get('insulin', False))
-        insulin_type = data.get('insulin_type')
-        activity = data.get('activity',[])
-        insulin_med = data.get('insulinMedications',[])
-        other_med = data.get('otherMedications',[])
+        user_id = data.get("userID")
+        sequences = data.get("sequences",[])
+        sensor_windows = data.get("sensorWindows",[])
+        days_since_start = int(data.get("daysSinceStart",0))
+        optimized_window = data.get("optimizedWindow")
+        if not sequences:
+            return jsonify({"error": "No sequences provided"}), 400
         
-        if not meals:
-            return jsonify({
-                'error': 'No meals provided',
-                'glucoseTrajectory': [],
-                'peakGlucose': G_b,
-                'averageGlucose': G_b,
-                'timePoints': []
-            }), 400 
-
         params = _load_user_params(user_id) if user_id else UserParams()
-        time_points = [i * .25 for i in range (96)]
+        window = select_window(days_since_start, optimized_window)
 
-        glucose_trajectory = simulate_glucose(
-            G0=G_b,
-            time=time_points,
-            meals=meals,
-            activity= activity,
-            insulin_medications=insulin_med,
-            other_medications=other_med,
+        raw = forecast(
+            sequences =sequences,
+            sensor_window= sensor_windows,
             params=params,
-            insulin=insulin,
-            insulin_type=insulin_type
+            window_minutes= window,
         )
-        glucose_list = glucose_trajectory.detach().numpy().tolist()
-        peak_glucose = max(glucose_list)
-        avg_glucose = sum(glucose_list) / len(glucose_list)
-
-        return jsonify({
-            'glucoseTrajectory': glucose_list,
-            'peakGlucose': float(peak_glucose),
-            'averageGlucose': float(avg_glucose),
-            'timePoints': time_points
-        })
+        return jsonify(build_forecast_response(raw))
     except Exception as e:
         print(f"    [api] Error in simulate_glucose endpoint: {e}")
         traceback.print_exc()
-        return jsonify({
-            'error': str(e),
-            'glucoseTrajectory': [],
-            'peakGlucose': 100.0,
-            'averageGlucose': 100.0,
-            'timePoints': []
-        }), 500
+        return jsonify({"error":str(e)}), 500
 
 @app.route('/train-model', methods=['POST'])
 def train_model_endpoint():

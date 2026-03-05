@@ -9,17 +9,14 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+const dbReadyPromise = runMigration();
 
 function RootLayoutContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [dbReady, setDbReady] = useState(false);
   useEffect(() => {
-    async function init() {
-      await runMigration();
-      setDbReady(true);
-    }
-    init();
+    dbReadyPromise.then(() => setDbReady(true));
   }, []);
   useEffect(() => {
     if (!loading) {
@@ -31,5 +28,5 @@ function RootLayoutContent() {
     }
   }, [user, loading]);
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return dbReady ? <Stack screenOptions={{ headerShown: false }} /> : null;
 }

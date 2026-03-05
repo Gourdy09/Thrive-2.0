@@ -1,5 +1,5 @@
 import * as SQLite from "expo-sqlite";
-
+import { initDB } from "./db";
 const DB_name = "glucose_app.db";
 const SCHEMA_VERSION = 1;
 
@@ -14,6 +14,7 @@ async function getDB(): Promise<SQLite.SQLiteDatabase> {
   return db;
 }
 export async function runMigration(): Promise<void> {
+  await initDB();
   const database = await getDB();
   await database.execAsync(`
         CREATE TABLE IF NOT EXISTS _meta (

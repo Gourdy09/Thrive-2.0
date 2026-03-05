@@ -10,53 +10,11 @@ function getDB(): SQLite.SQLiteDatabase {
   }
   return db;
 }
-export async function intiDB(): Promise<void> {
+export async function initDB(): Promise<void> {
+  if (db) return;
   db = await SQLite.openDatabaseAsync("glucose_app.db");
   // WAl mode makes writes faster and allows concurrent reads/writes
   await db.execAsync("PRAGMA journal_mode = WAL;");
-
-  await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS food_log (
-      id          TEXT PRIMARY KEY,
-      recipe_id   TEXT,
-      recipe_name TEXT NOT NULL,
-      timestamp   TEXT NOT NULL,      -- ISO  e.g. "2026-03-01T18:30:00Z"
-      meal_type   TEXT NOT NULL,      -- "breakfast" | "lunch" | "dinner" | "snack"
-      protein     REAL NOT NULL DEFAULT 0,
-      carbs       REAL NOT NULL DEFAULT 0,
-      fat         REAL NOT NULL DEFAULT 0,  
-      fiber       REAL NOT NULL DEFAULT 0,   
-      calories    REAL DEFAULT 0,
-      is_liquid   INTEGER NOT NULL DEFAULT 0, -- 0=false 1=true
-      image_url   TEXT
-    );
-  `);
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_food_log_timestamp
-    ON food_log (timestamp);
-    `);
-
-  await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS sensor_packets (
-    seq             INTEGER PRIMARY KEY,
-    unix            INTEGR NOT NULL,
-    timestamp       TEXT NOT NULL,
-    steps           INTEGER DEFAULT 0, 
-    vm              REAL DEFAULT 0,
-    peak_vm         REAL DEFAULT 0,
-    hr              REAL DEFAULT 0,
-    hrv             REAL DEFAULT 0,
-    hrv_drop        REAL DEFAULT 0,
-    hr_drop         REAL DEFAULT 0,
-    hr_stability    REAL DEFAULT 0,
-    sleep_score     REAL DEFAULT 0,
-    interpolated    INTEGER DEAFAULT 0
-    );
-    `);
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_sensor_packets_unix
-    ON sensor_packets (unix);
-    `);
   console.log("[db] tables ready");
 }
 export interface FoodLogRow {
@@ -77,7 +35,7 @@ export interface FoodLogRow {
 export async function insertFoodLog(entry: FoodLogRow): Promise<void> {
   await getDB().runAsync(
     `INSERT OR REPLACE INTO food_log
-        (if, recipe_id, recipe_name, timestamp, meal_type, protein, carbs, fat, fiber, calories, is_liquid, image_url)
+        (id, recipe_id, recipe_name, timestamp, meal_type, protein, carbs, fat, fiber, calories, is_liquid, image_url)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       entry.id,

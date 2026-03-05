@@ -25,7 +25,7 @@ def run_glucose_simulation(
     insulin_flags = [bool(meds) for meds in insulin_medications]
     insulin_types = [meds[0].get('type') if meds else None for meds in insulin_medications]
     other_medications = [s.get('other_medications', []) for s in sequences]
-    activity = sensor_windows
+    activity = sensor_window
 
     G = [torch.tensor(G0, dtype=torch.float32)]
 
