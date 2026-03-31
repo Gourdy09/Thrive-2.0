@@ -1,5 +1,6 @@
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { runMigration } from "@/lib/migration";
+import { pruneOldPredictions } from "@/storage/glucosePredictions";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 export default function RootLayout() {
@@ -17,6 +18,9 @@ function RootLayoutContent() {
   const [dbReady, setDbReady] = useState(false);
   useEffect(() => {
     dbReadyPromise.then(() => setDbReady(true));
+  }, []);
+  useEffect(() => {
+    pruneOldPredictions(90);
   }, []);
   useEffect(() => {
     if (!loading) {

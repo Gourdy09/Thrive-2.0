@@ -233,7 +233,7 @@ function ForecastLayers({
 
   return (
     <>
-      {/* confidence band  */}
+      {/* confidence band */}
       <Defs>
         <LinearGradient id="bandGrad" x1="0" y1="0" x2="0" y2="1">
           <Stop
@@ -250,8 +250,35 @@ function ForecastLayers({
       </Defs>
       <Path d={confidencePath} fill="url(#bandGrad)" />
 
-      {/* raw trajectory — dashed, dimmed */}
-      <Path d={trajPath} fill="none" stroke="#6366f1" strokeWidth={2.5} />
+      {/* raw trajectory — dashed and dimmed so it doesn't overlap μ */}
+      <Path
+        d={trajPath}
+        fill="none"
+        stroke="#6366f1"
+        strokeWidth={1.5}
+        strokeOpacity={0.35}
+        strokeDasharray="4 4"
+      />
+
+      {/* μ line — past (solid) */}
+      <Path
+        d={pointsToPath(
+          muXs.slice(0, nowIndex + 1),
+          muYs.slice(0, nowIndex + 1),
+        )}
+        fill="none"
+        stroke="#6366f1"
+        strokeWidth={2.5}
+      />
+
+      {/* μ line — future (faded) */}
+      <Path
+        d={pointsToPath(muXs.slice(nowIndex), muYs.slice(nowIndex))}
+        fill="none"
+        stroke="#6366f1"
+        strokeWidth={2.5}
+        strokeOpacity={0.4}
+      />
 
       {/* current point dot */}
       <Circle
@@ -261,18 +288,6 @@ function ForecastLayers({
         fill="#6366f1"
         stroke="#fff"
         strokeWidth={1.5}
-      />
-
-      {/* μ line */}
-      <Path d={muPath} fill="none" stroke="#6366f1" strokeWidth={2.5} />
-
-      {/* Future Line fade */}
-      <Path
-        d={pointsToPath(muXs.slice(nowIndex), muYs.slice(nowIndex))}
-        fill="none"
-        stroke="#6366f1"
-        strokeWidth={2.5}
-        strokeOpacity={0.5}
       />
     </>
   );

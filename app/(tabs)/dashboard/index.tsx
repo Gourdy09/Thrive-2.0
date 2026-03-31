@@ -11,6 +11,7 @@ import {
   secondsSinceLastReading,
   type GlucoseEntry,
 } from "@/storage/glucoseLog";
+import { saveGlucosePredictions } from "@/storage/glucosePredictions"; // ← new
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { ChevronDown } from "lucide-react-native";
@@ -104,7 +105,7 @@ function AnimatedDropdown({
   if (!visible) return null;
 
   const borderColor = promptActive
-    ? "#f59e0b" // amber accent when prompted
+    ? "#f59e0b"
     : isOpen
       ? theme.tint
       : theme.border;
@@ -138,7 +139,6 @@ function AnimatedDropdown({
         {label}
       </Text>
 
-      {/* Dropdown trigger */}
       <TouchableOpacity
         onPress={toggle}
         style={{
@@ -158,7 +158,6 @@ function AnimatedDropdown({
         </Animated.View>
       </TouchableOpacity>
 
-      {/* Options */}
       <Animated.View style={{ maxHeight, overflow: "hidden" }}>
         <View
           style={{
@@ -202,7 +201,6 @@ function AnimatedDropdown({
         </View>
       </Animated.View>
 
-      {/* Numeric input */}
       <View style={{ marginTop: 16 }}>
         <Text
           style={{
@@ -255,9 +253,10 @@ export default function DashboardScreen() {
   const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
   const [hourlyPrompt, setHourlyPrompt] = useState(false);
 
-  const chartScrollRef = useRef<ScrollView>(null); // horizontal chart
+  const chartScrollRef = useRef<ScrollView>(null);
   const promptTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const savedForecastKeyRef = useRef<string | null>(null);
 
   const chartWidth = Math.max(Dimensions.get("window").width * 4, 800);
   const todayStr = new Date().toISOString().split("T")[0];
@@ -402,29 +401,28 @@ export default function DashboardScreen() {
       }, 100);
     }, [chartWidth]),
   );
-
-  const showEntryPanel = dailyEntries.length < MAX_DAILY_ENTRIES;
-
-  const hourlyValues = Array<number | null>(24).fill(null);
-  glucoseData.forEach((d) => {
-    hourlyValues[d.timestamp.getHours()] = d.value;
-  });
-  let lastVal = 0;
-  for (let i = 0; i < 24; i++) {
-    if (hourlyValues[i] == null) hourlyValues[i] = lastVal;
-    else lastVal = hourlyValues[i]!;
-  }
-
-  const hourLabels = Array.from({ length: 24 }, (_, i) => {
-    const h = i % 12 || 12;
-    const suffix = i < 12 ? "AM" : "PM";
-    return `${h}${suffix}`;
-  });
-
-  const chartData = { labels: hourLabels, datasets: [{ data: hourlyValues }] };
-
-  //Dashboard report
   const { data: forecastData } = useGlucoseForecast();
+
+  useEffect(() => {
+    if (!forecastData?.timePoints?.length) return;
+
+    const forecastKey = `${forecastData.timePoints[0]}_${forecastData.mu[0]}`;
+    if (savedForecastKeyRef.current === forecastKey) return;
+    savedForecastKeyRef.current = forecastKey;
+
+    const predictedAt = new Date().toISOString();
+
+    const rows = forecastData.timePoints.map((tp, i) => ({
+      predicted_at: predictedAt,
+      time_point: tp,
+      mu: forecastData.mu[i],
+      lower: forecastData.lower[i],
+      upper: forecastData.upper[i],
+    }));
+
+    saveGlucosePredictions(rows);
+  }, [forecastData]);
+
   const currentForecastIndex = React.useMemo(() => {
     if (!forecastData?.timePoints?.length) return -1;
 
@@ -444,10 +442,12 @@ export default function DashboardScreen() {
 
     return closestIdx;
   }, [forecastData]);
+
   const predictedNow =
     currentForecastIndex >= 0
       ? Math.round(forecastData?.mu?.[currentForecastIndex] ?? 0)
       : 0;
+
   const findClosestIndexForHourOffset = (offsetHours: number) => {
     if (!forecastData?.timePoints?.length || currentForecastIndex < 0)
       return -1;
@@ -463,6 +463,7 @@ export default function DashboardScreen() {
     });
     return closestIdx;
   };
+
   const idxPast = findClosestIndexForHourOffset(-2);
   const idxFuture = findClosestIndexForHourOffset(2);
 
@@ -488,25 +489,38 @@ export default function DashboardScreen() {
   const deltaSugar = bloodGlucoseLevel - predicted2HoursAgo;
   const expectedChange = predicted2HoursAgo - predictedNow;
 
+  const showEntryPanel = dailyEntries.length < MAX_DAILY_ENTRIES;
+
+  const hourlyValues = Array<number | null>(24).fill(null);
+  glucoseData.forEach((d) => {
+    hourlyValues[d.timestamp.getHours()] = d.value;
+  });
+  let lastVal = 0;
+  for (let i = 0; i < 24; i++) {
+    if (hourlyValues[i] == null) hourlyValues[i] = lastVal;
+    else lastVal = hourlyValues[i]!;
+  }
+
+  const hourLabels = Array.from({ length: 24 }, (_, i) => {
+    const h = i % 12 || 12;
+    const suffix = i < 12 ? "AM" : "PM";
+    return `${h}${suffix}`;
+  });
+
+  const chartData = { labels: hourLabels, datasets: [{ data: hourlyValues }] };
+
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: theme.background,
-      }}
-    >
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
       <View style={{ paddingHorizontal: 14, paddingTop: 60 }}>
         <Header username={username} icon="LayoutDashboard" />
       </View>
 
-      {/* ── Vertical page scroll ── */}
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Report card */}
         {forecastData ? (
           <DashboardReport
             bloodGlucoseLevel={bloodGlucoseLevel}
@@ -535,7 +549,6 @@ export default function DashboardScreen() {
           </ScrollView>
         </View>
 
-        {/* Fingerstick entry panel */}
         <AnimatedDropdown
           label="Blood Sugar Entry"
           placeholder="Select reading type"
