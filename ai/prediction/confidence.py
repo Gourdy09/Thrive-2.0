@@ -22,7 +22,7 @@ from ai.prediction.forecast import CANDIDATE_WINDOWS_MIN, DEFAULT_WINDOW_MIN, fo
 from ai.models.user.parameters import UserParams
 
 # band constants 
-K_SIGMA: float = 1.5 # σ multiplier  →  Δ = k * σ
+K_SIGMA: float = 1.5 # σ multiplier  Δ = k * σ
 DELTA_MIN: float = 10.0 # floor 
 DELTA_MAX: float = 30.0 # ceiling 
 # hit metric targets (spec 7.2.3)
@@ -62,7 +62,7 @@ def compute_confidence_bands(
     }
     """
     traj_tensor = torch.tensor(trajectory, dtype=torch.float32)
-    steps_per_win = max(1, round(window_mintes / dt_minutes))
+    steps_per_win = max(1, round(window_minutes / dt_minutes))
     T = len(trajectory )
 
     sigmas: List[float] = []
@@ -104,11 +104,11 @@ def hit_rate(
         return 0.0,0.0
     n= len(fingerstick_values)
     h15 = sum(
-        1 for mu,d,g in zip(mu_at_fingerstick,fingerstick_values)
+        1 for mu,g in zip(mu_at_fingerstick,fingerstick_values)
         if abs(g-mu) <= TARGET_80_MG
     )
     h20 = sum(
-        1 for mu, d, g in zip(mu_at_fingerstick, fingerstick_values)
+        1 for mu, g in zip(mu_at_fingerstick, fingerstick_values)
         if abs(g - mu) <= TARGET_90_MG
     )
     return h15 / n, h20 / n 
@@ -147,7 +147,7 @@ def optimized_window(
         trajectory = result["trajectory"]
         bands = compute_confidence_bands(trajectory, mu, dt_minutes,w)
 
-        my_at_fs: List[float] = [
+        mu_at_fs: List[float] = [
             mu[min(range(len(time_points)), key=lambda i: abs(time_points[i]- fs_t))]
             for fs_t in fingerstick_times
         ]
@@ -177,7 +177,7 @@ def build_forecast_response(
     mu = forecast_result["mu"]
     window_minutes = forecast_result["window_minutes"]
 
-    bands = compute_confidence_bands(trajectory, m, dt_minutes, window_minutes)
+    bands = compute_confidence_bands(trajectory, mu, dt_minutes, window_minutes)
 
     return {
         "timePoints":    forecast_result["time_points"],

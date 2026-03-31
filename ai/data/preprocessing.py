@@ -99,8 +99,7 @@ def _get_supabase(url: Optional[str] = None, key: Optional[str] = None) -> Clien
             "EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_KEY."
         )
     return create_client(url, key)
-
-
+# MEDICARITON
 def fetch_medication(
     user_id:      str,
     supabase_url: Optional[str] = None,
@@ -205,7 +204,7 @@ def _medication_period_at(meal_ts: dt, medications: List[MedicationEntry]) -> st
         return "unknown"
     return best.med_class
 
-
+# MEALS 
 def fetch_meals(
     conn:       sqlite3.Connection,
     start_date: Optional[str] = None,
@@ -334,6 +333,42 @@ def _empty_sensor_window() -> SensorWindow:
     )
 
 
+# FGINEGR STICK 
+def fetch_fingersticks_from_db(
+    conn: sqlite3.Connection,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    ) -> List[FingerstickAnchor]:
+    query = "SELECT timestamp, glucose_mg_dl, context FROM glucose_readings"
+    params: List[str] = []
+
+    if start_date and end_date:
+        query += " WHERE timestamp >= ? AND timestamp <= ?"
+        params = [start_date, end_date + "T23:59:59Z"]
+    elif start_date:
+        query += " WHERE timestamp >= ?"
+        params = [start_date]
+    query += " ORDER BY unix ASC"
+
+    try: 
+        rows = conn.execute(query, params).fetchall()
+    except sqlite3.OperationalError:
+        print ("    [preprocessing] glucose_readings table noet ofoudn -"
+        "scheme migration may not have run yet. Skipping DB fingersticks.")
+        return[]
+    anchors: List[FingerstickAnchor] = []
+    for row in rows: 
+        try: 
+            anchors.append(FingerstickAnchor(
+                timestamp=_parse_iso(row["timestamp"]),
+                glucose_mg_dl= float(row["glucose_mg_dl"]),
+                context= row["context"] or "other",
+            ))
+        except Exception as err:
+            print(f"    [preprocessing] Skipping glucsoe_readings row: {err}")
+    print(f"    [preprocessing] Loaded {len(anchors)} fingerstick anchros"
+        " from glucose_readings table")
+    return anchors
 
 def fetch_fingersticks(
     json_path:    Optional[str]       = None,
@@ -349,7 +384,7 @@ def fetch_fingersticks(
             print(f"    [preprocessing] Fingerstick file not found at '{json_path}'")
         return []
 
-    anchors = []
+    anchors = List[FingerstickAnchor] = []
     for e in entries:
         try:
             anchors.append(FingerstickAnchor(
@@ -364,20 +399,34 @@ def fetch_fingersticks(
     return anchors
 
 
+def _merge_fingersticks(
+    db_anchors: List[FingerstickAnchor],
+    json_anchors: List[FingerstickAnchor],
+) -> List[FingerstickAnchor]:
+    seen: set = set()
+    merged: List[FingerstickAnchor] = []
+    for a in db_anchors + json_anchors:
+        key = (int(a.timestamp.timestamp()), round(a.glucose_mg_dl,1))
+        if ket not in seen:
+            seen.add(key)
+            merged.append(a)
+    merged.sort(key=lambda a:a.timestamp)
+    return merged
+
 def _nearest_fingerstick(
     meal_ts: dt,
     anchors: List[FingerstickAnchor],
     max_hrs: float = 2.0,
 ) -> Optional[FingerstickAnchor]:
     if not anchors:
-        return None
+        return None 
     meal_t = meal_ts.timestamp()
-    best   = min(anchors, key=lambda a: abs(a.timestamp.timestamp() - meal_t))
+    best = min(anchors, key=lambda a: abs(a.timestamp.timestamp() - meal_t))
     if abs(best.timestamp.timestamp() - meal_t) > max_hrs * 3600:
-        return None
-    return best
+        return None 
+    return best 
 
-
+# SEQUENCE HADNLER 
 def build_sequences(
     conn:         sqlite3.Connection,
     meals:        List[MealFeatures],
@@ -403,9 +452,9 @@ def build_sequences(
             skipped += 1
             continue
 
-        fingerstick = _nearest_fingerstick(meal.timestamp, fingersticks) if phase <= 2 else None
+        fingerstick = _nearest_fingerstick(meal.timestamp, fingersticks) 
 
-        if phase == 1 and fingerstick is None and sensor.real_packet_count == 0:
+        if fingerstick is None and sensor.real_packet_count == 0:
             skipped += 1
             continue
 
@@ -426,7 +475,7 @@ def build_sequences(
     )
     return sequences
 
-
+# split into 3 
 def split_sequences(
     sequences: List[TrainingSequence],
     train_pct: float = 0.70,
@@ -446,7 +495,7 @@ def split_sequences(
     print(f"    [preprocessing] Split → train={len(train)}  val={len(val)}  test={len(test)}")
     return train, val, test
 
-
+# Serializtion 
 def _med_entry_to_dict(m: MedicationEntry) -> Dict:
     return {
         "med_id":       m.med_id,
@@ -505,7 +554,7 @@ def sequences_to_dict(seqs: List[TrainingSequence]) -> Dict:
         "training_phases": [s.training_phase for s in seqs],
     }
 
-
+# public entry point
 def load_training_data(
     db_path:          str                   = DEFAULT_DB_PATH,
     user_id:          Optional[str]         = None,
@@ -518,13 +567,7 @@ def load_training_data(
     end_date:         Optional[str]         = None,
     seed:             int                   = 42,
 ) -> Tuple[Dict, Dict, Dict, List[Dict]]:
-    """
-    Returns (train_data, val_data, test_data, meds_dicts).
 
-    meds_dicts is a list of plain dicts used by train.py to build
-    MedDurationModel. Gracefully degrades to empty list if user_id
-    is not provided or Supabase credentials are missing.
-    """
     print(f"\n[preprocessing] Starting pipeline...")
     print(f"  db_path:          {db_path}")
     print(f"  user_id:          {user_id or 'none (no medication fetch)'}")

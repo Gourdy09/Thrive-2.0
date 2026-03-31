@@ -101,15 +101,23 @@ class GlucoseLoss(nn.Module):
         obs_response = obs - baseline_expanded
         pred_response = pred - baseline_expanded
 
-        loss = torch.mean((pred_response - obs_response) ** 2)
-        return loss  
+        valid_mask = ~torch.isnan(obs_response)
+        if not valid_mask.any():
+                return torch.tensor(0.0, dtype=pred.dtype, requires_grad=False)
+        squarred_err = (pred_response - obs_response) ** 2 
+        return squarred_err[valid_mask].mean()
     
     def _window_loss(
         self,
         pred: torch.Tensor,
         obs: torch.Tensor 
     ) -> torch.Tensor:
-        abs_error = torch.abs(pred - obs)
+    # soft band loss - penalises prediction outside + delta of ppbs
+        valid_mask = ~torch.isnan(obs_response)
+        if not valid_mask.any():
+                return torch.tensor(0.0, dtype=pred.dtype, requires_grad=False)
+
+        abs_error = torch.abs(pred[valid_mask] - obs[valid_mask])
         band_loss = torch.clamp(abs_error - self.delta, min=0.0) ** 2
 
         loss = torch.mean(band_loss)
@@ -187,6 +195,9 @@ if __name__ == "__main__":
     obs = torch.randn(batch_size, time_steps) * 20 + 115
     baseline = torch.ones(batch_size) * 100 
 
+    obs[2, :] = float("nan")
+    obs[5, :] = float("nan")
+    
     loss_fn = GlucoseLoss(
         lambda_fingerstick=1.0,
         lambda_window=0.5,

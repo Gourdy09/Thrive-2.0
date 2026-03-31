@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { type GlucoseContext, getAllGlucoseReadings } from "./db";
 
 const GLUCOSE_LOG_KEY = "glucose_log";
 
@@ -6,8 +6,7 @@ export interface GlucoseLogEntry {
   id: string;
   timestamp: string;
   glucose: number;
-  context: "wake_up" | "pre_meal" | "post_meal_60" | "other";
-  entryType?: string;
+  context: GlucoseContext;
 }
 
 export interface ExportResult {
@@ -17,30 +16,18 @@ export interface ExportResult {
 }
 
 export async function exportGlucoseLog(): Promise<ExportResult> {
-  const raw = await AsyncStorage.getItem(GLUCOSE_LOG_KEY);
-  const stored: any[] = raw ? JSON.parse(raw) : [];
+  const rows = await getAllGlucoseReadings();
 
-  const entries: GlucoseLogEntry[] = stored.map((e) => ({
-    id: e.id ?? "",
-    timestamp: e.timestamp ?? new Date().toISOString(),
-    glucose: Number(e.glucose ?? e.glucose_mg_dl ?? 0),
-    context: normaliseContext(e.context ?? e.entryType ?? "other"),
+  const entries: GlucoseLogEntry[] = rows.map((r) => ({
+    id: r.id,
+    timestamp: r.timestamp,
+    glucose: r.glucose_mg_dl,
+    context: r.context,
   }));
-
-  console.log(`[exportGlucoseLog] ${entries.length} fingerstick entries ready`);
-
+  console.log(`[exportGlucoseLof] ${entries.length} fingerstick entires ready`);
   return {
     entries,
     entryCount: entries.length,
     exportedAt: new Date().toISOString(),
   };
-}
-
-function normaliseContext(raw: string): GlucoseLogEntry["context"] {
-  const s = raw.toLowerCase().trim();
-  if (s === "wake_up" || s === "wake up" || s === "wakeup") return "wake_up";
-  if (s === "pre_meal" || s === "pre-meal" || s === "premeal")
-    return "pre_meal";
-  if (s.includes("post") && s.includes("60")) return "post_meal_60";
-  return "other";
 }

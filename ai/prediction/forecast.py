@@ -9,6 +9,7 @@ from {30, 45, 60, 75} min via the hit-metric optimiser in confidence.py.
 """
 from __future__ import annotations
 import math 
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 import torch 
 from ai.models.user.parameters import UserParams
@@ -63,16 +64,16 @@ def _steps_per_window(
      """
      if len(time_points) < 2:
         return 1
-        gaps_hours = [
+     gaps_hours = [
             abs(time_points[i+1] -  time_points[i])
             for i in range(len(time_points)-1)
-        ]
-        gaps_hours.sort()
-        median_gap_hrs = gaps_hours[len(gaps_hours) // 2]
-        median_gap_min = median_gap_hrs * 60.0
-        if median_gap_min <= 0:
-            return 1
-        return max(1, round(window_minutes / median_gap_min))
+     ]
+     gaps_hours.sort()
+     median_gap_hrs = gaps_hours[len(gaps_hours) // 2]
+     median_gap_min = median_gap_hrs * 60.0
+     if median_gap_min <= 0:
+        return 1
+     return max(1, round(window_minutes / median_gap_min))
 
 def forecast (
     sequences: List[Dict[str, Any]],

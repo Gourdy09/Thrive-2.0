@@ -11,6 +11,7 @@ import {
   useColorScheme,
 } from "react-native";
 import Svg, {
+  Circle,
   Defs,
   Line,
   LinearGradient,
@@ -20,9 +21,9 @@ import Svg, {
   Text as SvgText,
 } from "react-native-svg";
 
-const CHART_HEIGHT = 260;
-const PADDING_TOP = 32;
-const PADDING_BOTTOM = 32;
+const CHART_HEIGHT = 280;
+const PADDING_TOP = 40;
+const PADDING_BOTTOM = 36;
 const PADDING_LEFT = 48;
 const HOURS_SHOWN = 24;
 const SCREEN_W = Dimensions.get("window").width;
@@ -30,11 +31,11 @@ const CHART_W = Math.max(SCREEN_W * 3, 900);
 const PLOT_H = CHART_HEIGHT - PADDING_TOP - PADDING_BOTTOM;
 const PLOT_W = CHART_W - PADDING_LEFT;
 
-const G_MIN = 60;
-const G_MAX = 240;
+const G_MIN = 40;
+const G_MAX = 300;
 
-function toX(hourOfDay: number): number {
-  return PADDING_LEFT + (hourOfDay / HOURS_SHOWN) * PLOT_W;
+function toX(hour: number): number {
+  return PADDING_LEFT + (hour / HOURS_SHOWN) * PLOT_W;
 }
 
 function toY(glucose: number): number {
@@ -70,7 +71,6 @@ function bandPath(
     d += ` C ${cpx} ${upperY[i - 1]}, ${cpx} ${upperY[i]}, ${xs[i]} ${upperY[i]}`;
   }
   for (let i = xs.length - 1; i >= 0; i--) {
-    const j = i === xs.length - 1 ? i : i;
     const cpx = i > 0 ? (xs[i - 1] + xs[i]) / 2 : xs[0];
     if (i === xs.length - 1) {
       d += ` L ${xs[i]} ${lowerY[i]}`;
@@ -82,7 +82,7 @@ function bandPath(
 }
 
 function YAxis({ isDark }: { isDark: boolean }) {
-  const ticks = [80, 100, 120, 140, 160, 180, 200];
+  const ticks = [60, 100, 140, 180, 220, 260];
   const color = isDark ? "#6b7280" : "#9ca3af";
   return (
     <>
@@ -113,7 +113,6 @@ function YAxis({ isDark }: { isDark: boolean }) {
     </>
   );
 }
-
 function XAxis({ isDark }: { isDark: boolean }) {
   const color = isDark ? "#6b7280" : "#9ca3af";
   return (
@@ -156,24 +155,26 @@ function XAxis({ isDark }: { isDark: boolean }) {
   );
 }
 
-function NowHighlight({ isDark }: { isDark: boolean }) {
-  const now = new Date();
-  const hour = now.getHours();
-  const x = toX(hour);
+function NowHighlight({
+  isDark,
+  currentHour,
+}: {
+  isDark: boolean;
+  currentHour: number;
+}) {
+  const x = toX(currentHour);
   const colWidth = PLOT_W / HOURS_SHOWN;
 
   return (
     <>
-      {/* highlight  */}
       <Rect
         x={x}
         y={PADDING_TOP}
         width={colWidth}
         height={PLOT_H}
-        fill={isDark ? "rgba(199, 218, 57, 0.12)" : "rgba(199,218, 57, 0.12)"}
+        fill={isDark ? "rgba(199,218,57,0.12)" : "rgba(199,218,57,0.12)"}
         rx={3}
       />
-      {/* left edge line */}
       <Line
         x1={x}
         y1={PADDING_TOP}
@@ -224,6 +225,11 @@ function ForecastLayers({
     () => pointsToPath(trajXs, trajYs),
     [trajXs, trajYs],
   );
+  const nowIndex = timePoints.findIndex(
+    (t) => t >= new Date().getHours() + new Date().getMinutes() / 60,
+  );
+  const currX = nowIndex >= 0 ? trajXs[nowIndex] : trajXs[trajXs.length - 1];
+  const currY = nowIndex >= 0 ? trajYs[nowIndex] : trajYs[trajYs.length - 1];
 
   return (
     <>
@@ -245,88 +251,38 @@ function ForecastLayers({
       <Path d={confidencePath} fill="url(#bandGrad)" />
 
       {/* raw trajectory — dashed, dimmed */}
-      <Path
-        d={trajPath}
-        fill="none"
-        stroke={isDark ? "#4b5563" : "#d1d5db"}
-        strokeWidth={1}
-        strokeDasharray="3,3"
+      <Path d={trajPath} fill="none" stroke="#6366f1" strokeWidth={2.5} />
+
+      {/* current point dot */}
+      <Circle
+        cx={currX}
+        cy={currY}
+        r={5}
+        fill="#6366f1"
+        stroke="#fff"
+        strokeWidth={1.5}
       />
 
       {/* μ line */}
       <Path d={muPath} fill="none" stroke="#6366f1" strokeWidth={2.5} />
+
+      {/* Future Line fade */}
+      <Path
+        d={pointsToPath(muXs.slice(nowIndex), muYs.slice(nowIndex))}
+        fill="none"
+        stroke="#6366f1"
+        strokeWidth={2.5}
+        strokeOpacity={0.5}
+      />
     </>
   );
 }
 
-function Legend({
-  isDark,
-  windowMinutes,
-}: {
-  isDark: boolean;
-  windowMinutes: number;
-}) {
-  const textColor = isDark ? "#9ca3af" : "#6b7280";
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        gap: 16,
-        paddingHorizontal: 4,
-        marginBottom: 8,
-      }}
-    >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <View
-          style={{
-            width: 16,
-            height: 3,
-            backgroundColor: "#6366f1",
-            borderRadius: 2,
-          }}
-        />
-        <Text style={{ fontSize: 11, color: textColor }}>μ (predicted)</Text>
-      </View>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <View
-          style={{
-            width: 16,
-            height: 10,
-            backgroundColor: "#6366f180",
-            borderRadius: 2,
-          }}
-        />
-        <Text style={{ fontSize: 11, color: textColor }}>±Δ band</Text>
-      </View>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <View
-          style={{
-            width: 16,
-            height: 1,
-            backgroundColor: isDark ? "#4b5563" : "#d1d5db",
-            borderRadius: 2,
-            borderStyle: "dashed",
-          }}
-        />
-        <Text style={{ fontSize: 11, color: textColor }}>raw G̃</Text>
-      </View>
-      <Text style={{ fontSize: 11, color: textColor, marginLeft: "auto" }}>
-        W={windowMinutes}min
-      </Text>
-    </View>
-  );
+interface GlucoseChartProps {
+  sequences: any[];
+  sensorWindows: any[];
 }
-
-// ── props ──────────────────────────────────────────────────────────────────
-// rodo (bluetooth): uncomment and restore props once pipeline is wired up
-// interface GlucoseChartProps {
-//   sequences:     any[];   // meal_features from sequences_to_dict
-//   sensorWindows: any[];   // sensor_windows from sequences_to_dict
-// }
-
-// ── main component ─────────────────────────────────────────────────────────
-// todo (bluetooth): restore props → export default function GlucoseChart({ sequences = [], sensorWindows = [] }: GlucoseChartProps)
-export default function GlucoseChart() {
+export default function GlucoseChart({ sequences = [], sensor_windows = [] }) {
   const colorScheme = useColorScheme() ?? "dark";
   const isDark = colorScheme === "dark";
   const theme = Colors[colorScheme];
@@ -335,23 +291,82 @@ export default function GlucoseChart() {
   //  pass sequences and sensorWindows into hook
   const { data, loading, error } = useGlucoseForecast();
 
+  const currentHour = useMemo(() => {
+    if (!data?.timePoints?.length)
+      return new Date().getHours() + new Date().getMinutes() / 60;
+    const nowIndex = data.timePoints.findIndex(
+      (t) => t >= new Date().getHours() + new Date().getMinutes() / 60,
+    );
+    return nowIndex >= 0
+      ? data.timePoints[nowIndex]
+      : data.timePoints[data.timePoints.length - 1];
+  }, [data]);
+
   // scroll to current hour on mount / focus
   useFocusEffect(
     React.useCallback(() => {
-      const hour = new Date().getHours() + new Date().getMinutes() / 60;
-      const scrollX = toX(hour) - SCREEN_W / 2;
+      const scrollX = toX(currentHour) - SCREEN_W / 2;
       setTimeout(() => {
         scrollRef.current?.scrollTo({
           x: Math.max(0, scrollX),
           animated: false,
         });
       }, 80);
-    }, []),
+    }, [currentHour]),
   );
 
   return (
     <View style={{ backgroundColor: theme.background }}>
-      <Legend isDark={isDark} windowMinutes={data?.windowMinutes ?? 60} />
+      {/* Legend */}
+      <View
+        style={{
+          flexDirection: "row",
+          gap: 16,
+          paddingHorizontal: 4,
+          marginBottom: 8,
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View
+            style={{
+              width: 16,
+              height: 3,
+              backgroundColor: "#6366f1",
+              borderRadius: 2,
+            }}
+          />
+          <Text style={{ fontSize: 11, color: isDark ? "#9ca3af" : "#6b7280" }}>
+            μ (predicted)
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View
+            style={{
+              width: 16,
+              height: 10,
+              backgroundColor: "#6366f180",
+              borderRadius: 2,
+            }}
+          />
+          <Text style={{ fontSize: 11, color: isDark ? "#9ca3af" : "#6b7280" }}>
+            ±Δ band
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View
+            style={{
+              width: 16,
+              height: 1,
+              backgroundColor: isDark ? "#4b5563" : "#d1d5db",
+              borderRadius: 2,
+              borderStyle: "dashed",
+            }}
+          />
+          <Text style={{ fontSize: 11, color: isDark ? "#9ca3af" : "#6b7280" }}>
+            raw G̃
+          </Text>
+        </View>
+      </View>
 
       {loading && !data && (
         <View
@@ -374,38 +389,20 @@ export default function GlucoseChart() {
         </View>
       )}
 
-      {error && !data && (
-        <ScrollView
-          ref={scrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingVertical: 4 }}
-        >
-          <Svg width={CHART_W} height={CHART_HEIGHT}>
-            <TargetBand isDark={isDark} />
-            <YAxis isDark={isDark} />
-            <XAxis isDark={isDark} />
-            <NowHighlight isDark={isDark} />
-          </Svg>
-        </ScrollView>
-      )}
-
-      {(data || (!loading && !error)) && (
-        <ScrollView
-          ref={scrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingVertical: 4 }}
-        >
-          <Svg width={CHART_W} height={CHART_HEIGHT}>
-            <TargetBand isDark={isDark} />
-            <YAxis isDark={isDark} />
-            <XAxis isDark={isDark} />
-            <NowHighlight isDark={isDark} />
-            {data && <ForecastLayers data={data} isDark={isDark} />}
-          </Svg>
-        </ScrollView>
-      )}
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingVertical: 4 }}
+      >
+        <Svg width={CHART_W} height={CHART_HEIGHT}>
+          <TargetBand isDark={isDark} />
+          <YAxis isDark={isDark} />
+          <XAxis isDark={isDark} />
+          <NowHighlight isDark={isDark} currentHour={currentHour} />
+          {data && <ForecastLayers data={data} isDark={isDark} />}
+        </Svg>
+      </ScrollView>
     </View>
   );
 }

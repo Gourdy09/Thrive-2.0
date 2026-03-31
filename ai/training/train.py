@@ -1,20 +1,19 @@
 """
-STAGED TRAINING SCHEDULE
---------------------------
 Phase 1 (days 0-2)   Trainable: Gb, beta1, su
                      Loss:      L_fingerstick only
                      Goal:      Anchor baseline glucose and carb sensitivity
-
+ 
 Phase 2 (days 3-7)   Trainable: + delta_u, beta2, beta3, eta_liq_u
                      Loss:      L_fingerstick + L_phys
                      Goal:      Add circadian/nocturnal and wearable signals
-
+ 
 Phase 3 (day 8+)     Trainable: + eta_fp_u, beta4, beta5, alpha
                      Loss:      L_phys dominant (fingerstick gone)
                      Goal:      Full personalisation from wearable alone
 """
 from __future__ import annotations
 import json
+import os 
 import traceback
 from datetime import datetime 
 from pathlib import Path
@@ -24,7 +23,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from ai.data.preprocessing import load_training_data
 from ai.models.user.parameters import UserParams
-from ai.simulation.simulate_glucose import simulate_glucose
+from ai.simulation._run_glucose_simulation import run_glucose_simulation
 from ai.personalization.loss import GlucoseLoss
 PHASE_PARAMS: Dict[int, List[str]] = {
     1: ["Gb","beta1", "su"],
@@ -45,7 +44,7 @@ def _set_trainable_params(params: UserParams, phase: int) -> None:
     unlocked_names = [n for n, p in params.named_parameters() if p.requires_grad]
     print(f"    Phase {phase} - trainable: {unlocked_names}")
     print(f"                   - frozen:    {locked}")
-def etract_params_dict(params:UserParams)-> Dict:
+def extract_params_dict(params:UserParams)-> Dict:
     return {
         "Gb":                 params.Gb.item(),
         "beta1":              params.beta1.item(),
@@ -65,6 +64,23 @@ def etract_params_dict(params:UserParams)-> Dict:
         "lambda_med":         params.lambda_med.item(),
         "alpha_activity_raw": params.alpha_activity_raw.detach().tolist(),
     }
+def _day_night_deltas(
+    train_seqs: Dict, 
+    params: UserParams,
+) -> Tuple[List[float],List[float]]:
+    night_deltas: List[float]=[]
+    day_deltas: List[float]= []
+    meal_features = train_seqs.get("meal_features",[])
+    sensor_window = train_seqs.get("sensor_window",[])
+    for meal, sensor in zip(meal_features, sensor_window):
+        hour = meal.get("hour", 12.0)
+        delta = sensor.get("hr_response",0.0)
+        if 22 <= hour or hour < 6:
+            night_deltas.append(delta)
+        else:
+            day_deltas.append(delta)
+    return night_deltas, day_deltas
+
 def upload_params_to_supabase(
     user_id: str,
     params: UserParams,
@@ -138,15 +154,15 @@ def _extract_obs_tensors(
     fingersticks = sequences.get("fingersticks",[])
     sensor_wins = sequences.get("sensor_windows",[])
 
-    if phase <= 2 and any(fs is not None for fs in fingersticks):
-        obs_glucose = torch.tensor([
-            fs["glucose_mg_dl"] if fs is not None else float("nan")
-            for fs in fingersticks
-        ], dtype=torch.float32)
+    if any(fs is not None for fs in fingersticks):
+        obs_glucose: Optional[torch.Tensor] = torch.tensor(
+            [
+                fs["glucose_mg_dl"] if fs is not None else float("nan")
+                for fs in fingersticks
+            ],
+            dtype=torch.float32,
+        )
     else:
-        obs_glucose = None
-
-    if phase == 3:
         obs_glucose = None 
     hr_obs = torch.tensor([s["hr_postprandial"] for s in sensor_wins], dtype=torch.float32)
     hrv_obs = torch.tensor([s["hrv_drop_norm"] for s in sensor_wins], dtype=torch.float32)
@@ -162,10 +178,14 @@ def _train_phase(
     epochs: int, 
     lr: float,
     checkpoint_dir: Path, 
-) -> Dict[str, List[float]]:
-    print(f"\n{'='*55}")
+    night_deltas: List[float],
+    day_deltas: List[float],
+    ) -> Dict[str, List[float]]:
+    print(f"\n{'='*20}")
     print(f"    PHASE {phase} ({epochs} epochs, lr={lr})")
-    print(f"{'='*55}")
+    print(f"{'='*20}")
+
+    _set_trainable_params(params, phase)
 
     trainable = [p for p in params.parameters() if p.requires_grad]
     optimizer = Adam(trainable, lr=lr)
@@ -182,7 +202,7 @@ def _train_phase(
         optimizer.zero_grad()
         pred_glucose_train = run_glucose_simulation(
             sequences = train_seqs["meal_features"],
-            sensor_windows = train_seqs["sensor_windows"],
+            sensor_window = train_seqs["sensor_windows"],
             params    = params,
         )
         hr_pred_train = pred_glucose_train * HR_SCALE
@@ -246,6 +266,7 @@ def _train_phase(
                 f"phys={train_components['phys']:.4f}")
     print(f"\n  Phase {phase} done — best val loss: {best_val:.4f}  (saved → {ckpt_path})")
     return history
+# public entry point 
 def train_user_model(
         user_id:          str,
         db_path:          str            = "./glucose_app.db",
@@ -296,6 +317,7 @@ def train_user_model(
         start_phase = 2
     else:
         start_phase = 3
+
     print(f"[train] days_since_start={days_since_start} -> starting at phase {start_phase}")
     if start_phase >1:
         prev_ckpt = ckpt_dir / f"phase{start_phase - 1}_best.pt"
@@ -306,9 +328,10 @@ def train_user_model(
         else:
             print(f"[train] WARNING: no phase {start_phase - 1} checkpoint found — starting from scratch")
 
-    all_history = {}
+    all_history: Dict[str, Dict] = {}
     total_meals    = len(train_seqs["meal_features"]) + len(val_seqs["meal_features"])
     final_val_loss = float("inf")
+
     for phase in range(start_phase,4):
         history = _train_phase(
             phase          = phase,
@@ -328,7 +351,7 @@ def train_user_model(
         params.load_state_dict(ckpt_data["params"])
         final_val_loss = ckpt_data["val_loss"]
         
-    final_path = ckpt_dir / f"final_params.pt"
+    final_path = ckpt_dir / "final_params.pt"
     torch.save(params.state_dict(), final_path)
     print(f"\n[train] Training complete. Final params aved -> {final_path}")
     history_path = ckpt_dir / "loss_history.json"

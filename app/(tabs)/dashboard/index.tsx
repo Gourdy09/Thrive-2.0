@@ -3,15 +3,23 @@ import GlucoseChart from "@/components/dashboard/GlucoseChart";
 import Header from "@/components/Header";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
-import { addGlucoseEntry } from "@/storage/glucoseLog";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useGlucoseForecast } from "@/hooks/useglucoseforecast";
+import type { GlucoseContext } from "@/lib/db";
+import {
+  addGlucoseEntry,
+  getGlucoseLogForDay,
+  secondsSinceLastReading,
+  type GlucoseEntry,
+} from "@/storage/glucoseLog";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { ChevronDown } from "lucide-react-native";
-import { default as React, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
+  AppState,
+  AppStateStatus,
   Dimensions,
   ScrollView,
   Text,
@@ -20,410 +28,548 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+
+const HOURLY_PROMPT_INTERVAL_S = 60 * 60;
+const MAX_DAILY_ENTRIES = 24;
+
+const CONTEXT_OPTIONS: { label: string; value: GlucoseContext }[] = [
+  { label: "Wake up", value: "wake_up" },
+  { label: "Pre-meal", value: "pre_meal" },
+  { label: "~60 min post-meal", value: "post_meal_60" },
+  { label: "Hourly check", value: "hourly" },
+  { label: "Other", value: "other" },
+];
+
 function AnimatedDropdown({
   label,
-  messgae1,
-  value1,
+  placeholder,
+  selectedValue,
   options,
   onSelect,
-  value2,
-  message2,
+  inputLabel,
+  inputValue,
   onChangeText,
-  colorScheme,
   theme,
-  show,
+  colorScheme,
+  visible,
+  promptActive,
 }: {
   label: string;
-  messgae1: string;
-  value1: string;
-  options: string[];
-  message2: string;
-  onSelect: (value: string) => void;
-  onChangeText: (value: string) => void;
-  value2: string;
-  colorScheme: string;
+  placeholder: string;
+  selectedValue: GlucoseContext | "";
+  options: { label: string; value: GlucoseContext }[];
+  onSelect: (v: GlucoseContext) => void;
+  inputLabel: string;
+  inputValue: string;
+  onChangeText: (v: string) => void;
   theme: any;
-  show: boolean;
+  colorScheme: string;
+  visible: boolean;
+  promptActive: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [animation] = useState(new Animated.Value(0));
   const [rotateAnim] = useState(new Animated.Value(0));
 
-  const toggleDropdown = () => {
-    const toValue = isOpen ? 0 : 1;
-
+  const toggle = () => {
+    const to = isOpen ? 0 : 1;
     Animated.parallel([
       Animated.spring(animation, {
-        toValue,
+        toValue: to,
         useNativeDriver: false,
         friction: 8,
         tension: 40,
       }),
       Animated.timing(rotateAnim, {
-        toValue,
+        toValue: to,
         duration: 200,
         useNativeDriver: true,
       }),
     ]).start();
-
-    setIsOpen(!isOpen);
+    setIsOpen((o) => !o);
   };
 
-  const itemHeight = 48;
   const maxHeight = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, options.length * itemHeight + 16],
+    outputRange: [0, options.length * 48 + 16],
   });
-
   const rotate = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "180deg"],
   });
-  if (show) {
-    return (
-      <View style={{ marginBottom: 20 }}>
-        {/* Section Label */}
-        <Text
+
+  const selectedLabel =
+    options.find((o) => o.value === selectedValue)?.label ?? placeholder;
+
+  if (!visible) return null;
+
+  const borderColor = promptActive
+    ? "#f59e0b" // amber accent when prompted
+    : isOpen
+      ? theme.tint
+      : theme.border;
+
+  return (
+    <View style={{ marginBottom: 20 }}>
+      {promptActive && (
+        <View
           style={{
-            fontSize: 16,
-            fontWeight: "600",
-            color: theme.text,
-            marginBottom: 12,
-            marginTop: 20,
+            backgroundColor: "#f59e0b22",
+            borderRadius: 10,
+            padding: 10,
+            marginBottom: 8,
           }}
         >
-          {label}
-        </Text>
+          <Text style={{ color: "#f59e0b", fontWeight: "600", fontSize: 13 }}>
+            ⏰ It's been over an hour — time for a glucose check!
+          </Text>
+        </View>
+      )}
 
-        {/* Dropdown Trigger */}
-        <TouchableOpacity
-          onPress={toggleDropdown}
+      <Text
+        style={{
+          fontSize: 16,
+          fontWeight: "600",
+          color: theme.text,
+          marginBottom: 12,
+          marginTop: 12,
+        }}
+      >
+        {label}
+      </Text>
+
+      {/* Dropdown trigger */}
+      <TouchableOpacity
+        onPress={toggle}
+        style={{
+          backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+          borderWidth: 2,
+          borderRadius: 12,
+          padding: 16,
+          borderColor,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: theme.text, fontSize: 16 }}>{selectedLabel}</Text>
+        <Animated.View style={{ transform: [{ rotate }] }}>
+          <ChevronDown size={20} color={theme.icon} />
+        </Animated.View>
+      </TouchableOpacity>
+
+      {/* Options */}
+      <Animated.View style={{ maxHeight, overflow: "hidden" }}>
+        <View
+          style={{
+            marginTop: 8,
+            borderRadius: 12,
+            backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
+            borderWidth: 2,
+            borderColor: theme.border,
+            overflow: "hidden",
+          }}
+        >
+          {options.map((opt, idx) => (
+            <TouchableOpacity
+              key={opt.value}
+              onPress={() => {
+                onSelect(opt.value);
+                toggle();
+              }}
+              style={{
+                padding: 16,
+                borderBottomWidth: idx < options.length - 1 ? 1 : 0,
+                borderBottomColor: theme.border,
+                backgroundColor:
+                  selectedValue === opt.value
+                    ? colorScheme === "dark"
+                      ? "#252830"
+                      : "#e8f0ff"
+                    : "transparent",
+              }}
+            >
+              <Text
+                style={{
+                  color: selectedValue === opt.value ? theme.tint : theme.text,
+                  fontWeight: selectedValue === opt.value ? "600" : "400",
+                }}
+              >
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Animated.View>
+
+      {/* Numeric input */}
+      <View style={{ marginTop: 16 }}>
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: "500",
+            color: theme.text,
+            marginBottom: 8,
+          }}
+        >
+          {inputLabel}
+        </Text>
+        <TextInput
+          placeholder="e.g. 110"
+          keyboardType="numeric"
+          placeholderTextColor={theme.icon}
+          value={inputValue}
+          onChangeText={(t) => onChangeText(t.replace(/[^0-9]/g, ""))}
           style={{
             backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
             borderWidth: 2,
             borderRadius: 12,
             padding: 16,
-            borderColor: isOpen ? theme.tint : theme.border,
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
+            color: theme.text,
+            fontSize: 16,
+            borderColor: promptActive ? "#f59e0b" : theme.border,
           }}
-        >
-          <Text style={{ color: theme.text, fontSize: 16 }}>
-            {value1 || messgae1}
-          </Text>
-
-          <Animated.View style={{ transform: [{ rotate }] }}>
-            <ChevronDown size={20} color={theme.icon} />
-          </Animated.View>
-        </TouchableOpacity>
-
-        {/* Dropdown Options */}
-        <Animated.View style={{ maxHeight, overflow: "hidden" }}>
-          <View
-            style={{
-              marginTop: 8,
-              borderRadius: 12,
-              backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
-              borderWidth: 2,
-              borderColor: theme.border,
-              overflow: "hidden",
-            }}
-          >
-            {options.map((option, index) => (
-              <TouchableOpacity
-                key={option}
-                onPress={() => {
-                  onSelect(option);
-                  toggleDropdown();
-                }}
-                style={{
-                  padding: 16,
-                  borderBottomWidth: index < options.length - 1 ? 1 : 0,
-                  borderBottomColor: theme.border,
-                  backgroundColor:
-                    value1 === option
-                      ? colorScheme === "dark"
-                        ? "#252830"
-                        : "#e8f0ff"
-                      : "transparent",
-                }}
-              >
-                <Text
-                  style={{
-                    color: value1 === option ? theme.tint : theme.text,
-                    fontWeight: value1 === option ? "600" : "400",
-                  }}
-                >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Blood Sugar Input */}
-        <View style={{ marginTop: 16 }}>
-          <Text
-            style={{
-              fontSize: 14,
-              fontWeight: "500",
-              color: theme.text,
-              marginBottom: 8,
-            }}
-          >
-            {message2}
-          </Text>
-
-          <TextInput
-            placeholder="e.g. 110"
-            keyboardType="numeric"
-            placeholderTextColor={theme.icon}
-            onChangeText={(text) => onChangeText(text.replace(/[^0-9]/g, ""))}
-            style={{
-              backgroundColor: colorScheme === "dark" ? "#1c1e22" : "#f8f9fa",
-              borderWidth: 2,
-              borderRadius: 12,
-              padding: 16,
-              color: theme.text,
-              fontSize: 16,
-              borderColor: theme.border,
-            }}
-          />
-        </View>
+        />
       </View>
-    );
-  } else {
-    return null;
-  }
+    </View>
+  );
 }
 
-export default function index() {
+interface GlucoseReading {
+  value: number;
+  timestamp: Date;
+}
+
+export default function DashboardScreen() {
   const colorScheme = useColorScheme() ?? "dark";
   const theme = Colors[colorScheme];
-
-  const bloodGlucoseLevel = 0;
-  const units = "mg/dL";
-  const deltaSugar = -0;
-  const expectedChange = 0;
-  const { user } = useAuth();
+  const { user, checkProfileComplete } = useAuth();
   const router = useRouter();
+  const isFocused = useIsFocused();
+
   const [profileComplete, setProfileComplete] = useState(true);
   const [alertShown, setAlertShown] = useState(false);
-  const [entryType, setEntryType] = useState("");
+  const [entryContext, setEntryContext] = useState<GlucoseContext | "">("");
   const [bloodSugarLvl, setBloodSugarLvl] = useState("");
   const [dailyEntries, setDailyEntries] = useState<GlucoseEntry[]>([]);
-  const MAX_ENTRIES = 3;
+  const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
+  const [hourlyPrompt, setHourlyPrompt] = useState(false);
 
-  type GlucoseEntry = {
-    glucose_mg_dl: number;
-    timestamp: string;
-    context: string[];
-  };
+  const chartScrollRef = useRef<ScrollView>(null); // horizontal chart
+  const promptTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+
+  const chartWidth = Math.max(Dimensions.get("window").width * 4, 800);
+  const todayStr = new Date().toISOString().split("T")[0];
+  const username = (user?.email as string)?.split("@")[0] || "User";
+
+  const checkHourlyPrompt = useCallback(async () => {
+    const elapsed = await secondsSinceLastReading();
+    setHourlyPrompt(elapsed >= HOURLY_PROMPT_INTERVAL_S);
+  }, []);
+
+  const schedulePromptCheck = useCallback(() => {
+    if (promptTimerRef.current) clearInterval(promptTimerRef.current);
+    promptTimerRef.current = setInterval(checkHourlyPrompt, 5 * 60 * 1000);
+  }, [checkHourlyPrompt]);
+
+  useEffect(() => {
+    checkHourlyPrompt();
+    schedulePromptCheck();
+
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (
+        appStateRef.current.match(/inactive|background/) &&
+        nextState === "active"
+      ) {
+        checkHourlyPrompt();
+      }
+      appStateRef.current = nextState;
+    });
+
+    return () => {
+      if (promptTimerRef.current) clearInterval(promptTimerRef.current);
+      sub.remove();
+    };
+  }, [checkHourlyPrompt, schedulePromptCheck]);
+
+  const loadTodayEntries = useCallback(async () => {
+    const entries = await getGlucoseLogForDay(todayStr);
+    setDailyEntries(entries);
+    setGlucoseData(
+      entries.map((e) => ({
+        value: e.glucose_mg_dl,
+        timestamp: new Date(e.timestamp),
+      })),
+    );
+  }, [todayStr]);
+
+  useEffect(() => {
+    loadTodayEntries();
+  }, [user, loadTodayEntries]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTodayEntries();
+      checkHourlyPrompt();
+    }, [loadTodayEntries, checkHourlyPrompt]),
+  );
+
   const onSave = async () => {
-    if (!bloodSugarLvl || !entryType) return null;
+    if (!bloodSugarLvl || !entryContext) {
+      Alert.alert("Missing info", "Please choose a context and enter a value.");
+      return;
+    }
 
     try {
-      const newEntry = await addGlucoseEntry({
+      await addGlucoseEntry({
         glucose_mg_dl: Number(bloodSugarLvl),
-        context: [entryType],
+        context: entryContext,
       });
-
-      setDailyEntries((prev) => [...prev, newEntry]);
-      setEntryType("");
+      setEntryContext("");
       setBloodSugarLvl("");
+      setHourlyPrompt(false);
+      await loadTodayEntries();
     } catch (error: any) {
       Alert.alert("Error", error.message);
     }
   };
-  const showDropdown = dailyEntries.length < MAX_ENTRIES;
-
-  interface GlucoseReading {
-    value: number;
-    timestamp: Date;
-  }
-  const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
-  const scrollViewRef = React.useRef<ScrollView>(null);
-  const isFocused = useIsFocused();
-  const hourLabels = Array.from({ length: 24 }, (_, i) => {
-    const hour = i % 12 || 12;
-    const suffix = i < 12 ? "AM" : "PM";
-    return `${hour}${suffix}`;
-  });
-
-  const { checkProfileComplete } = useAuth();
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const jsonValue = await AsyncStorage.getItem("SugarData");
-        if (jsonValue != null) {
-          const parsed: GlucoseReading[] = JSON.parse(jsonValue).map(
-            (d: any) => ({
-              timestamp: new Date(d.timestamp),
-              value: d.value,
-            }),
-          );
-          setGlucoseData(parsed);
-        } else {
-          const now = new Date();
-          const mock: GlucoseReading[] = Array.from({ length: 8 }, (_, i) => ({
-            timestamp: new Date(
-              now.getFullYear(),
-              now.getMonth(),
-              now.getDate(),
-              i,
-            ),
-            value: 90 + Math.floor(Math.random() * 40),
-          }));
-          setGlucoseData(mock);
-        }
-      } catch (e) {
-        console.error("loading Errror:", e);
-      }
-    };
-
-    loadData();
-  }, [user]);
 
   useEffect(() => {
     const checkProfile = async () => {
-      if (user?.id && !alertShown) {
-        try {
-          const isComplete = await checkProfileComplete(user.id);
-          setProfileComplete(isComplete);
-
-          if (!isComplete) {
-            setAlertShown(true);
-            Alert.alert(
-              "Complete your profile",
-              "Please complete your profile settings to continue.",
-              [
-                {
-                  text: "Go to Settings",
-                  onPress: () => router.push("/(tabs)/account/settings"),
-                },
-                {
-                  text: "Later",
-                  style: "cancel",
-                  onPress: () => setAlertShown(false),
-                },
-              ],
-            );
-          }
-        } catch (error) {
-          console.error("Error checking profile:", error);
+      if (!user?.id || alertShown) return;
+      try {
+        const isComplete = await checkProfileComplete(user.id);
+        setProfileComplete(isComplete);
+        if (!isComplete) {
+          setAlertShown(true);
+          Alert.alert(
+            "Complete your profile",
+            "Please complete your profile settings to continue.",
+            [
+              {
+                text: "Go to Settings",
+                onPress: () => router.push("/(tabs)/account/settings"),
+              },
+              {
+                text: "Later",
+                style: "cancel",
+                onPress: () => setAlertShown(false),
+              },
+            ],
+          );
         }
+      } catch (err) {
+        console.error("Error checking profile:", err);
       }
     };
-
     checkProfile();
   }, [user, alertShown]);
 
-  const chartWidth = Math.max(Dimensions.get("window").width * 4, 800);
-  const centerScroll = () => {
-    if (scrollViewRef.current) {
+  const centerScroll = useCallback(() => {
+    if (!chartScrollRef.current) return;
+    const currentHour = new Date().getHours();
+    const screenWidth = Dimensions.get("window").width;
+    const hourWidth = chartWidth / 24;
+    const scrollX = currentHour * hourWidth - screenWidth / 2 + hourWidth / 2;
+    setTimeout(() => {
+      chartScrollRef.current?.scrollTo({
+        x: Math.max(0, scrollX),
+        animated: true,
+      });
+    }, 100);
+  }, [chartWidth]);
+
+  useEffect(() => {
+    if (glucoseData.length > 0) centerScroll();
+  }, [glucoseData, centerScroll]);
+  useEffect(() => {
+    if (isFocused) centerScroll();
+  }, [isFocused, centerScroll]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!chartScrollRef.current) return;
       const currentHour = new Date().getHours();
       const screenWidth = Dimensions.get("window").width;
       const hourWidth = chartWidth / 24;
       const scrollX = currentHour * hourWidth - screenWidth / 2 + hourWidth / 2;
-
       setTimeout(() => {
-        scrollViewRef.current?.scrollTo({
+        chartScrollRef.current?.scrollTo({
           x: Math.max(0, scrollX),
-          animated: true,
+          animated: false,
         });
       }, 100);
-    }
-  };
-
-  useEffect(() => {
-    if (glucoseData.length > 0) {
-      centerScroll();
-    }
-  }, [glucoseData, chartWidth]);
-
-  useEffect(() => {
-    if (isFocused) {
-      centerScroll();
-    }
-  }, [isFocused]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      if (scrollViewRef.current) {
-        const currentHour = new Date().getHours();
-        const screenWidth = Dimensions.get("window").width;
-        const hourWidth = chartWidth / 24;
-        const scrollX =
-          currentHour * hourWidth - screenWidth / 2 + hourWidth / 2;
-
-        setTimeout(() => {
-          scrollViewRef.current?.scrollTo({
-            x: Math.max(0, scrollX),
-            animated: false,
-          });
-        }, 100);
-      }
     }, [chartWidth]),
   );
 
-  const hourlyValues = Array(24).fill(null);
+  const showEntryPanel = dailyEntries.length < MAX_DAILY_ENTRIES;
+
+  const hourlyValues = Array<number | null>(24).fill(null);
   glucoseData.forEach((d) => {
-    const hour = d.timestamp.getHours();
-    hourlyValues[hour] = d.value;
+    hourlyValues[d.timestamp.getHours()] = d.value;
   });
-  let lastValue = 0;
+  let lastVal = 0;
   for (let i = 0; i < 24; i++) {
-    if (hourlyValues[i] == null) hourlyValues[i] = lastValue;
-    else lastValue = hourlyValues[i];
+    if (hourlyValues[i] == null) hourlyValues[i] = lastVal;
+    else lastVal = hourlyValues[i]!;
   }
-  const chartData = {
-    labels: hourLabels,
-    datasets: [
-      {
-        data: hourlyValues,
-      },
-    ],
+
+  const hourLabels = Array.from({ length: 24 }, (_, i) => {
+    const h = i % 12 || 12;
+    const suffix = i < 12 ? "AM" : "PM";
+    return `${h}${suffix}`;
+  });
+
+  const chartData = { labels: hourLabels, datasets: [{ data: hourlyValues }] };
+
+  //Dashboard report
+  const { data: forecastData } = useGlucoseForecast();
+  const currentForecastIndex = React.useMemo(() => {
+    if (!forecastData?.timePoints?.length) return -1;
+
+    const now = new Date();
+    const currentHour = now.getHours() + now.getMinutes() / 60;
+
+    let closestIdx = 0;
+    let minDiff = Infinity;
+
+    forecastData.timePoints.forEach((t, i) => {
+      const diff = Math.abs(t - currentHour);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = i;
+      }
+    });
+
+    return closestIdx;
+  }, [forecastData]);
+  const predictedNow =
+    currentForecastIndex >= 0
+      ? Math.round(forecastData?.mu?.[currentForecastIndex] ?? 0)
+      : 0;
+  const findClosestIndexForHourOffset = (offsetHours: number) => {
+    if (!forecastData?.timePoints?.length || currentForecastIndex < 0)
+      return -1;
+    const target = forecastData.timePoints[currentForecastIndex] + offsetHours;
+    let closestIdx = currentForecastIndex;
+    let minDiff = Infinity;
+    forecastData.timePoints.forEach((t, i) => {
+      const diff = Math.abs(t - target);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = i;
+      }
+    });
+    return closestIdx;
   };
-  const username = (user?.email as string)?.split("@")[0] || "User";
+  const idxPast = findClosestIndexForHourOffset(-2);
+  const idxFuture = findClosestIndexForHourOffset(2);
+
+  const predicted2HoursAgo =
+    idxPast >= 0
+      ? Math.round(forecastData?.mu?.[idxPast] ?? predictedNow)
+      : predictedNow;
+  const predicted2HoursAhead =
+    idxFuture >= 0
+      ? Math.round(forecastData?.mu?.[idxFuture] ?? predictedNow)
+      : predictedNow;
+
+  // dont touch
+  const latestReading = dailyEntries.at(-1);
+  const latestReadingAgeMinutes = latestReading
+    ? (Date.now() - new Date(latestReading.timestamp).getTime()) / 60000
+    : Infinity;
+  const bloodGlucoseLevel =
+    latestReading && latestReadingAgeMinutes < 60
+      ? latestReading.glucose_mg_dl
+      : predictedNow;
+  // dont touch
+  const deltaSugar = bloodGlucoseLevel - predicted2HoursAgo;
+  const expectedChange = predicted2HoursAgo - predictedNow;
 
   return (
     <View
       style={{
         flex: 1,
         backgroundColor: theme.background,
-        paddingHorizontal: 14,
-        paddingTop: 60,
       }}
     >
-      {/* Header */}
-      <Header username={username} icon="LayoutDashboard" />
+      <View style={{ paddingHorizontal: 14, paddingTop: 60 }}>
+        <Header username={username} icon="LayoutDashboard" />
+      </View>
 
-      {/* Report Card */}
-      <DashboardReport
-        bloodGlucoseLevel={bloodGlucoseLevel}
-        units={units}
-        deltaSugar={deltaSugar}
-        expectedChange={expectedChange}
-      />
-      <ScrollView>
-        <GlucoseChart />
+      {/* ── Vertical page scroll ── */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Report card */}
+        {forecastData ? (
+          <DashboardReport
+            bloodGlucoseLevel={bloodGlucoseLevel}
+            units="mg/dL"
+            deltaSugar={deltaSugar}
+            expectedChange={expectedChange}
+          />
+        ) : (
+          <Text>Loading... Forecast data is null</Text>
+        )}
+        <View
+          style={{
+            height: 300,
+            marginBottom: 20,
+            borderRadius: 16,
+            overflow: "hidden",
+          }}
+        >
+          <ScrollView
+            ref={chartScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ flex: 1 }}
+          >
+            <GlucoseChart />
+          </ScrollView>
+        </View>
+
+        {/* Fingerstick entry panel */}
+        <AnimatedDropdown
+          label="Blood Sugar Entry"
+          placeholder="Select reading type"
+          selectedValue={entryContext}
+          options={CONTEXT_OPTIONS}
+          onSelect={setEntryContext}
+          inputLabel="Blood sugar level (mg/dL)"
+          inputValue={bloodSugarLvl}
+          onChangeText={setBloodSugarLvl}
+          theme={theme}
+          colorScheme={colorScheme}
+          visible={showEntryPanel}
+          promptActive={hourlyPrompt}
+        />
+
+        {showEntryPanel && (
+          <TouchableOpacity
+            onPress={onSave}
+            style={{
+              backgroundColor: theme.tint,
+              borderRadius: 12,
+              padding: 16,
+              alignItems: "center",
+              marginTop: 4,
+              opacity: bloodSugarLvl && entryContext ? 1 : 0.45,
+            }}
+            disabled={!bloodSugarLvl || !entryContext}
+          >
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>
+              Save Reading
+            </Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
-
-      <AnimatedDropdown
-        label="Blood Sugar Entry"
-        messgae1="Please select which type of entry this is"
-        value1={entryType}
-        options={["Pre-meal", "~60 min post-meal", "Wake up"]}
-        onSelect={setEntryType}
-        message2="Please enter your blood sugar level (mg/dL)"
-        value2={bloodSugarLvl}
-        onChangeText={setBloodSugarLvl}
-        colorScheme={colorScheme}
-        theme={theme}
-        show={showDropdown}
-      />
     </View>
   );
 }

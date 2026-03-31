@@ -5,18 +5,23 @@ let db: SQLite.SQLiteDatabase | null = null;
 function getDB(): SQLite.SQLiteDatabase {
   if (!db) {
     throw new Error(
-      "[db] database not initlized. Call initDV() at app startup first",
+      "[db] database not initialized. Call initDB() at app startup first.",
     );
   }
   return db;
 }
+
+export function getDBHandle(): SQLite.SQLiteDatabase {
+  return getDB();
+}
+
 export async function initDB(): Promise<void> {
   if (db) return;
   db = await SQLite.openDatabaseAsync("glucose_app.db");
-  // WAl mode makes writes faster and allows concurrent reads/writes
   await db.execAsync("PRAGMA journal_mode = WAL;");
   console.log("[db] tables ready");
 }
+
 export interface FoodLogRow {
   id: string;
   recipe_id?: string;
@@ -35,8 +40,9 @@ export interface FoodLogRow {
 export async function insertFoodLog(entry: FoodLogRow): Promise<void> {
   await getDB().runAsync(
     `INSERT OR REPLACE INTO food_log
-        (id, recipe_id, recipe_name, timestamp, meal_type, protein, carbs, fat, fiber, calories, is_liquid, image_url)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, recipe_id, recipe_name, timestamp, meal_type,
+        protein, carbs, fat, fiber, calories, is_liquid, image_url)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       entry.id,
       entry.recipe_id ?? null,
@@ -53,18 +59,19 @@ export async function insertFoodLog(entry: FoodLogRow): Promise<void> {
     ],
   );
 }
+
 export async function getFoodLogForDay(dateStr: string): Promise<FoodLogRow[]> {
   const rows = await getDB().getAllAsync<any>(
-    `SELECT * FROM food_log
-        WHERE timestamp LIKE ?
-        ORDER BY timestamp ASC`,
+    `SELECT * FROM food_log WHERE timestamp LIKE ? ORDER BY timestamp ASC`,
     [`${dateStr}%`],
   );
   return rows.map(rowToFoodLogEntry);
 }
+
 export async function deleteFoodLogEntry(id: string): Promise<void> {
   await getDB().runAsync(`DELETE FROM food_log WHERE id = ?`, [id]);
 }
+
 function rowToFoodLogEntry(row: any): FoodLogRow {
   return {
     id: row.id,
@@ -81,6 +88,7 @@ function rowToFoodLogEntry(row: any): FoodLogRow {
     image_url: row.image_url ?? undefined,
   };
 }
+
 export interface SensorPacketRow {
   seq: number;
   unix: number;
@@ -96,13 +104,15 @@ export interface SensorPacketRow {
   sleep_score: number;
   interpolated: boolean;
 }
+
 export async function insertSensorPacket(
   packet: SensorPacketRow,
 ): Promise<void> {
   await getDB().runAsync(
     `INSERT OR IGNORE INTO sensor_packets
-        (seq, unix, timestamp, steps, vm, peak_vm, hr, hrv, hrv_drop, hr_drop, hr_stability, sleep_score, interpolated)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) `,
+       (seq, unix, timestamp, steps, vm, peak_vm, hr, hrv,
+        hrv_drop, hr_drop, hr_stability, sleep_score, interpolated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       packet.seq,
       packet.unix,
@@ -120,6 +130,7 @@ export async function insertSensorPacket(
     ],
   );
 }
+
 export async function insertSensorPacketBatch(
   packets: SensorPacketRow[],
 ): Promise<void> {
@@ -130,30 +141,34 @@ export async function insertSensorPacketBatch(
     }
   });
 }
+
 export async function getSensorPacketsInWindow(
   startUnix: number,
   endUnix: number,
 ): Promise<SensorPacketRow[]> {
   const rows = await getDB().getAllAsync<any>(
     `SELECT * FROM sensor_packets
-        WHERE unix >= ? AND unix <= ?
-        ORDER BY unix ASC`,
+     WHERE unix >= ? AND unix <= ?
+     ORDER BY unix ASC`,
     [startUnix, endUnix],
   );
   return rows.map(rowToSensorPacket);
 }
+
 export async function getLatestSensorPacket(): Promise<SensorPacketRow | null> {
   const row = await getDB().getFirstAsync<any>(
     `SELECT * FROM sensor_packets ORDER BY unix DESC LIMIT 1`,
   );
   return row ? rowToSensorPacket(row) : null;
 }
-export async function pruneSensorPackets(keepDays: number = 30): Promise<void> {
+
+export async function pruneSensorPackets(keepDays = 30): Promise<void> {
   const cutoffUnix = Math.floor(Date.now() / 1000) - keepDays * 24 * 60 * 60;
   await getDB().runAsync(`DELETE FROM sensor_packets WHERE unix < ?`, [
     cutoffUnix,
   ]);
 }
+
 function rowToSensorPacket(row: any): SensorPacketRow {
   return {
     seq: row.seq,
@@ -169,5 +184,92 @@ function rowToSensorPacket(row: any): SensorPacketRow {
     hr_stability: row.hr_stability,
     sleep_score: row.sleep_score,
     interpolated: row.interpolated === 1,
+  };
+}
+
+export type GlucoseContext =
+  | "wake_up"
+  | "pre_meal"
+  | "post_meal_60"
+  | "hourly"
+  | "other";
+
+export interface GlucoseReadingRow {
+  id: string;
+  timestamp: string;
+  unix: number;
+  glucose_mg_dl: number;
+  context: GlucoseContext;
+  meal_id?: string;
+}
+
+export async function insertGlucoseReading(
+  reading: GlucoseReadingRow,
+): Promise<void> {
+  await getDB().runAsync(
+    `INSERT OR REPLACE INTO glucose_readings
+       (id, timestamp, unix, glucose_mg_dl, context, meal_id)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      reading.id,
+      reading.timestamp,
+      reading.unix,
+      reading.glucose_mg_dl,
+      reading.context,
+      reading.meal_id ?? null,
+    ],
+  );
+}
+
+export async function getGlucoseReadingsInRange(
+  startUnix: number,
+  endUnix: number,
+): Promise<GlucoseReadingRow[]> {
+  const rows = await getDB().getAllAsync<any>(
+    `SELECT * FROM glucose_readings
+     WHERE unix >= ? AND unix <= ?
+     ORDER BY unix ASC`,
+    [startUnix, endUnix],
+  );
+  return rows.map(rowToGlucoseReading);
+}
+
+// All readings for a given calendar date (YYYY-MM-DD)
+export async function getGlucoseReadingsForDay(
+  dateStr: string,
+): Promise<GlucoseReadingRow[]> {
+  const rows = await getDB().getAllAsync<any>(
+    `SELECT * FROM glucose_readings
+     WHERE timestamp LIKE ?
+     ORDER BY unix ASC`,
+    [`${dateStr}%`],
+  );
+  return rows.map(rowToGlucoseReading);
+}
+
+// Return the most-recent reading, or null if the table is empty.
+export async function getLatestGlucoseReading(): Promise<GlucoseReadingRow | null> {
+  const row = await getDB().getFirstAsync<any>(
+    `SELECT * FROM glucose_readings ORDER BY unix DESC LIMIT 1`,
+  );
+  return row ? rowToGlucoseReading(row) : null;
+}
+
+// All readings — used by the Python export helper.
+export async function getAllGlucoseReadings(): Promise<GlucoseReadingRow[]> {
+  const rows = await getDB().getAllAsync<any>(
+    `SELECT * FROM glucose_readings ORDER BY unix ASC`,
+  );
+  return rows.map(rowToGlucoseReading);
+}
+
+function rowToGlucoseReading(row: any): GlucoseReadingRow {
+  return {
+    id: row.id,
+    timestamp: row.timestamp,
+    unix: row.unix,
+    glucose_mg_dl: row.glucose_mg_dl,
+    context: row.context as GlucoseContext,
+    meal_id: row.meal_id ?? undefined,
   };
 }
