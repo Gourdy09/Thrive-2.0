@@ -34,6 +34,7 @@ export async function addGlucoseEntry(entry: {
   };
 
   await insertGlucoseReading(row);
+  await syncGlucoseReadings();
   return row;
 }
 
@@ -56,4 +57,7 @@ export async function secondsSinceLastReading(): Promise<number> {
   const latest = await getLatestGlucoseReading();
   if (!latest) return Infinity;
   return Math.floor(Date.now() / 1000) - latest.unix;
+}
+function syncGlucoseReadings() {
+  throw new Error("Function not implemented.");
 }

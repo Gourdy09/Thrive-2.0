@@ -124,7 +124,6 @@ export default function FoodLogScreen() {
     return grouped;
   };
 
-  // ✅ Use flat fields from FoodLogRow (no .nutrition nesting)
   const getTotalNutrition = () => {
     return foodLog.reduce(
       (acc, entry) => ({
@@ -282,7 +281,6 @@ export default function FoodLogScreen() {
                     >
                       {/* Text Content */}
                       <View style={{ flex: 1 }}>
-                        {/* ✅ snake_case fields directly from FoodLogRow */}
                         <Text
                           style={{
                             fontSize: 16,

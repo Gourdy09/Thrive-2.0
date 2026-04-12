@@ -5,13 +5,14 @@ import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGlucoseForecast } from "@/hooks/useglucoseforecast";
 import type { GlucoseContext } from "@/lib/db";
+import { syncAll } from "@/lib/supabaseSync";
 import {
   addGlucoseEntry,
   getGlucoseLogForDay,
   secondsSinceLastReading,
   type GlucoseEntry,
 } from "@/storage/glucoseLog";
-import { saveGlucosePredictions } from "@/storage/glucosePredictions"; // ← new
+import { saveGlucosePredictions } from "@/storage/glucosePredictions";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { ChevronDown } from "lucide-react-native";
@@ -29,7 +30,6 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-
 const HOURLY_PROMPT_INTERVAL_S = 60 * 60;
 const MAX_DAILY_ENTRIES = 24;
 
@@ -282,6 +282,7 @@ export default function DashboardScreen() {
         nextState === "active"
       ) {
         checkHourlyPrompt();
+        syncAll();
       }
       appStateRef.current = nextState;
     });
@@ -486,6 +487,7 @@ export default function DashboardScreen() {
       ? latestReading.glucose_mg_dl
       : predictedNow;
   // dont touch
+
   const deltaSugar = bloodGlucoseLevel - predicted2HoursAgo;
   const expectedChange = predicted2HoursAgo - predictedNow;
 
@@ -512,7 +514,12 @@ export default function DashboardScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
       <View style={{ paddingHorizontal: 14, paddingTop: 60 }}>
-        <Header username={username} icon="LayoutDashboard" />
+        <TouchableOpacity
+          onLongPress={() => router.push("/(tabs)/account/adminScreen")}
+          delayLongPress={1000}
+        >
+          <Header username={username} icon="LayoutDashboard" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView

@@ -1,4 +1,5 @@
 import * as SQLite from "expo-sqlite";
+import { syncFoodLog } from "./supabaseSync";
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -58,6 +59,7 @@ export async function insertFoodLog(entry: FoodLogRow): Promise<void> {
       entry.image_url ?? null,
     ],
   );
+  await syncFoodLog();
 }
 
 export async function getFoodLogForDay(dateStr: string): Promise<FoodLogRow[]> {

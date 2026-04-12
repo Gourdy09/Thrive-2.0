@@ -1,22 +1,14 @@
-/**
- * storage/glucosePredictions.ts
- *
- * Stores AI-generated glucose forecast data entirely on-device using SQLite.
- * No data ever leaves the device — HIPAA-safe by design.
- */
-
 import * as SQLite from "expo-sqlite";
 
 export interface GlucosePrediction {
   id?: number;
-  predicted_at: string; // ISO-8601
-  time_point: number; // fractional hour 0–24
-  mu: number; // mean predicted glucose mg/dL
-  lower: number; // lower confidence bound
-  upper: number; // upper confidence bound
+  predicted_at: string;
+  time_point: number;
+  mu: number;
+  lower: number;
+  upper: number;
 }
 
-// Bump when schema changes — triggers a clean table rebuild on next launch.
 const SCHEMA_VERSION = 2;
 
 let _db: SQLite.SQLiteDatabase | null = null;
@@ -55,8 +47,6 @@ async function getDb(): Promise<SQLite.SQLiteDatabase> {
   return _db;
 }
 
-// ─── Write ────────────────────────────────────────────────────────────────────
-
 export async function saveGlucosePredictions(
   predictions: Omit<GlucosePrediction, "id">[],
 ): Promise<void> {
@@ -65,8 +55,6 @@ export async function saveGlucosePredictions(
   try {
     const db = await getDb();
 
-    // No explicit transaction — INSERT OR IGNORE handles duplicates safely
-    // and avoids all BEGIN/ROLLBACK conflicts with expo-sqlite internals.
     for (const p of predictions) {
       await db.runAsync(
         `INSERT OR IGNORE INTO glucose_predictions
@@ -79,8 +67,6 @@ export async function saveGlucosePredictions(
     console.error("[glucosePredictions] save error:", error);
   }
 }
-
-// ─── Read ─────────────────────────────────────────────────────────────────────
 
 export async function getGlucosePredictions(): Promise<GlucosePrediction[]> {
   try {
@@ -122,9 +108,6 @@ export async function getLatestPredictions(): Promise<GlucosePrediction[]> {
     return [];
   }
 }
-
-// ─── Maintenance ──────────────────────────────────────────────────────────────
-
 export async function pruneOldPredictions(daysToKeep = 90): Promise<void> {
   try {
     const db = await getDb();
