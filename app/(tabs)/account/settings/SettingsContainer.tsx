@@ -93,7 +93,7 @@ export default function SettingsContainer() {
         id: d.id,
         name: d.name,
         type: d.type,
-        serialNumber: d.serialnumber,
+        serialNumber: d.serial_Number,
         batteryLevel: d.batteryLevel ?? 0,
         lastSync: d.lastsync ? new Date(d.lastsync) : new Date(0),
         isConnected: d.isconnected ?? false,
@@ -439,7 +439,7 @@ export default function SettingsContainer() {
       } else {
         // Insert new device
         newDevice = {
-          id: Date.now().toString(),
+          id: user.id,
           name: device.name,
           type: device.name,
           serialNumber: `SN-${Math.random()
@@ -456,14 +456,14 @@ export default function SettingsContainer() {
             user_id: user.id,
             name: newDevice.name,
             type: newDevice.type,
-            serialnumber: newDevice.serialNumber,
+            serial_number: newDevice.serialNumber,
             batteryLevel: newDevice.batteryLevel,
             lastsync: newDevice.lastSync,
             isconnected: true,
             isactive: true,
           },
           {
-            onConflict: "id, serialNumber", // <-- must be string, not array
+            onConflict: "id,serial_number", // <-- must be string, not array
           },
         );
 
@@ -535,7 +535,7 @@ export default function SettingsContainer() {
       const { error } = await supabase
         .from("connected_devices")
         .delete()
-        .or(`id.eq.${deviceId}`)
+        .eq("id", deviceId)
         .eq("user_id", user.id);
 
       if (error) {
