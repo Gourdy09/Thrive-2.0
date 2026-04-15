@@ -515,7 +515,7 @@ export default function DashboardScreen() {
     <View style={{ flex: 1, backgroundColor: theme.background }}>
       <View style={{ paddingHorizontal: 14, paddingTop: 60 }}>
         <TouchableOpacity
-          onLongPress={() => router.push("/(tabs)/account/adminScreen")}
+          onLongPress={() => router.push("../(tabs)/account/adminScren.tsx")}
           delayLongPress={1000}
         >
           <Header username={username} icon="LayoutDashboard" />
